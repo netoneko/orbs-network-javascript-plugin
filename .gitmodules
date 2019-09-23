@@ -1,0 +1,6 @@
+[submodule "vendor/github.com/ry/v8worker2"]
+	path = vendor/github.com/ry/v8worker2
+	url = https://github.com/ry/v8worker2.git
+[submodule "vendor/github.com/stretchr/testify"]
+	path = vendor/github.com/stretchr/testify
+	url = https://github.com/stretchr/testify
