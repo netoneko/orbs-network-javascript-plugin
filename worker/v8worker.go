@@ -25,12 +25,18 @@ type Worker interface {
 }
 
 func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error) {
-	err = w.worker.Load(string(executionContextId) + ".js", code)
+	wrappedCode, err := WrapWithSDK(code, methodName.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = w.worker.Load(string(executionContextId) + ".js", wrappedCode)
 	if err != nil {
 		return nil, err, nil
 	}
 
-	return argsToArgumentArray(<-w.value), nil, err
+	val := (<-w.value).([]byte)
+	return argsToArgumentArray(val), nil, err
 }
 
 func argsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {

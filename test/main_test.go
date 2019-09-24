@@ -47,16 +47,14 @@ func Test_V8Worker(t *testing.T) {
 	worker := constructor()
 
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
-const buffer = new ArrayBuffer(4*2);
-const view = new DataView(buffer);
-view.setUint32(0, 1, true);
-view.setUint32(1, 2, true);
-view.setUint32(2, 3, true);
-view.setUint32(3, 4, true);
-V8Worker2.send(buffer);
-`, "sup", nil)
+function hello() {
+	return 1
+}
+`, "hello", nil)
 	require.NoError(t, err)
 	require.NoError(t, outputErr)
-
 	require.NotNil(t, outputArgs)
+
+	bytesValue := outputArgs.ArgumentsIterator().NextArguments().BytesValue()
+	require.EqualValues(t, []byte{1, 0, 0, 0, 0, 0, 0, 0}, bytesValue)
 }
