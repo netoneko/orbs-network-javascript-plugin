@@ -11,24 +11,33 @@ func WrapWithSDK(code string, method string, arguments []interface{}) (string, e
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
-const val = (function () {
-	{{.code}}
+V8Worker2.recv(function(msg) {
+	const val = (function () {
+/** 
+  contract code start
+**/
+{{.code}}
+/** 
+  contract code end
+**/
 
-	return {{.method}}()
-})();
+const methodCallArguments = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
+return {{.method}}(...methodCallArguments);
+	})();
 
-const serializeReturnValue = (val) => {
-    if (typeof val === "number") {
-		return [argUint32(val)];
+	const serializeReturnValue = (val) => {
+    	if (typeof val === "number") {
+			return [argUint32(val)];
+		}
+
+		if (typeof val === "string") {
+			return [argString(val)];
+		}
 	}
 
-	if (typeof val === "string") {
-		return [argString(val)];
-	}
-}
-
-const payload = packedArgumentsEncode(serializeReturnValue(val));
-V8Worker2.send(payload.buffer);
+	const payload = packedArgumentsEncode(serializeReturnValue(val));
+	V8Worker2.send(payload.buffer);
+});
 `)
 
 	if err != nil {
@@ -43,6 +52,8 @@ V8Worker2.send(payload.buffer);
 	}); err != nil {
 		return "", err
 	}
+
+	//println(buf.String())
 
 	return buf.String(), nil
 }

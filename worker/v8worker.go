@@ -41,11 +41,14 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return 0
 	})
 
-	err = w.worker.LoadModule(string(executionContextId) + ".js", wrappedCode, func(moduleName, referrerName string) int {
+	if err := w.worker.LoadModule(string(executionContextId) + ".js", wrappedCode, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
-	})
-	if err != nil {
+	}); err != nil {
+		return nil, err, nil
+	}
+
+	if err := w.worker.SendBytes(args.Raw()); err != nil {
 		return nil, err, nil
 	}
 

@@ -22,13 +22,12 @@ function hello() {
 }
 
 func TestNewV8Worker_CallMethodWithArguments(t *testing.T) {
-	t.Skip("not implemented")
 	worker := NewV8Worker()
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
 function hello(a, b) {
 	return 1 + a + b
 }
-`, "hello", ArgsToArgumentArray(2, 3))
+`, "hello", ArgsToArgumentArray(uint32(2), uint32(3)))
 	require.NoError(t, err)
 	require.NoError(t, outputErr)
 	require.NotNil(t, outputArgs)
