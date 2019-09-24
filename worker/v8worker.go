@@ -5,6 +5,7 @@ import (
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/ry/v8worker2"
+	"io/ioutil"
 )
 
 type wrapper struct {
@@ -30,7 +31,19 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, nil, err
 	}
 
-	err = w.worker.Load(string(executionContextId) + ".js", wrappedCode)
+	clientSDK, err := ioutil.ReadFile("../js/arguments.js")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	w.worker.LoadModule("arguments", `const global = {}; export const Arguments = global;` + string(clientSDK), func(moduleName, referrerName string) int {
+		println("resolved", moduleName, referrerName)
+		return 0
+	});
+	err = w.worker.LoadModule(string(executionContextId) + ".js", wrappedCode, func(moduleName, referrerName string) int {
+		println("resolved", moduleName, referrerName)
+		return 0
+	})
 	if err != nil {
 		return nil, err, nil
 	}

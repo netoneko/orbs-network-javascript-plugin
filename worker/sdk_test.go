@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestWrapWithSDK(t *testing.T) {
+func TestNewV8Worker(t *testing.T) {
 	worker := NewV8Worker()
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
 function hello() {

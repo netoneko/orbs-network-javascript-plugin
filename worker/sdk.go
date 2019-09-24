@@ -7,6 +7,11 @@ import (
 
 func WrapWithSDK(code string, method string, arguments []interface{}) (string, error) {
 	tmpl, err := template.New(`sdk`).Parse(`
+import { Arguments } from "arguments";
+const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
+
+V8Worker2.print(argUint32);
+
 const val = (function () {
 	{{.code}}
 
