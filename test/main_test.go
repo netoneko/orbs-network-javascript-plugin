@@ -55,6 +55,6 @@ function hello() {
 	require.NoError(t, outputErr)
 	require.NotNil(t, outputArgs)
 
-	bytesValue := outputArgs.ArgumentsIterator().NextArguments().BytesValue()
-	require.EqualValues(t, []byte{1, 0, 0, 0, 0, 0, 0, 0}, bytesValue)
+	uint32Value := outputArgs.ArgumentsIterator().NextArguments().Uint32Value()
+	require.EqualValues(t, 1, uint32Value)
 }

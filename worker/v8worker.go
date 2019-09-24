@@ -39,7 +39,8 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	w.worker.LoadModule("arguments", `const global = {}; export const Arguments = global;` + string(clientSDK), func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
-	});
+	})
+
 	err = w.worker.LoadModule(string(executionContextId) + ".js", wrappedCode, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
@@ -49,24 +50,7 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	}
 
 	val := (<-w.value).([]byte)
-	return argsToArgumentArray(val), nil, err
-}
-
-func argsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
-	res := []*protocol.ArgumentBuilder{}
-	for _, arg := range args {
-		switch arg.(type) {
-		case uint32:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE, Uint32Value: arg.(uint32)})
-		case uint64:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_64_VALUE, Uint64Value: arg.(uint64)})
-		case string:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_STRING_VALUE, StringValue: arg.(string)})
-		case []byte:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_BYTES_VALUE, BytesValue: arg.([]byte)})
-		}
-	}
-	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+	return protocol.ArgumentArrayReader(val), nil, err
 }
 
 func NewV8Worker() Worker {

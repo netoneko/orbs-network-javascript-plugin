@@ -2,6 +2,7 @@ package worker
 
 import (
 	"bytes"
+	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"text/template"
 )
 
@@ -10,8 +11,6 @@ func WrapWithSDK(code string, method string, arguments []interface{}) (string, e
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
-V8Worker2.print(argUint32);
-
 const val = (function () {
 	{{.code}}
 
@@ -19,17 +18,17 @@ const val = (function () {
 })();
 
 const serializeReturnValue = (val) => {
-	const buffer = new ArrayBuffer(4*2);
-	const view = new DataView(buffer);
-
     if (typeof val === "number") {
-		view.setUint32(0, val, true);
+		return [argUint32(val)];
 	}
 
-	return buffer;
+	if (typeof val === "string") {
+		return [argString(val)];
+	}
 }
 
-V8Worker2.send(serializeReturnValue(val));
+const payload = packedArgumentsEncode(serializeReturnValue(val));
+V8Worker2.send(payload.buffer);
 `)
 
 	if err != nil {
@@ -46,4 +45,21 @@ V8Worker2.send(serializeReturnValue(val));
 	}
 
 	return buf.String(), nil
+}
+
+func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
+	res := []*protocol.ArgumentBuilder{}
+	for _, arg := range args {
+		switch arg.(type) {
+		case uint32:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE, Uint32Value: arg.(uint32)})
+		case uint64:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_64_VALUE, Uint64Value: arg.(uint64)})
+		case string:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_STRING_VALUE, StringValue: arg.(string)})
+		case []byte:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_BYTES_VALUE, BytesValue: arg.([]byte)})
+		}
+	}
+	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
 }
