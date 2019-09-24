@@ -2,36 +2,64 @@ package worker
 
 import "C"
 import (
+	"github.com/orbs-network/orbs-spec/types/go/primitives"
+	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/ry/v8worker2"
 )
 
-type ReceiveMessageCallback v8worker2.ReceiveMessageCallback
+type wrapper struct {
+	worker *v8worker2.Worker
+	callback v8worker2.ReceiveMessageCallback
+	value chan interface{}
+}
 
-type ModuleResolverCallback v8worker2.ModuleResolverCallback
+func buildCallback(value chan interface{}) v8worker2.ReceiveMessageCallback {
+	return func(msg []byte) []byte {
+		value <- msg
+		return nil
+	}
+}
 
 type Worker interface {
-	Dispose()
-
-	Load(scriptName string, code string) error
-	LoadModule(scriptName string, code string, resolve v8worker2.ModuleResolverCallback) error
-	SendBytes(msg []byte) error
-	TerminateExecution()
+	ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error)
 }
 
-func NewV8Worker(cb v8worker2.ReceiveMessageCallback) Worker {
-	return v8worker2.New(cb)
+func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error) {
+	err = w.worker.Load(string(executionContextId) + ".js", code)
+	if err != nil {
+		return nil, err, nil
+	}
+
+	return argsToArgumentArray(<-w.value), nil, err
 }
 
-//func ResolveModule(moduleSpecifier *C.char, referrerSpecifier *C.char, resolverToken int) C.int {
-//	return v8worker2.ResolveModule(moduleSpecifier, referrerSpecifier, resolverToken)
-//}
-
-func SetFlags(args []string) []string {
-	return v8worker2.SetFlags(args)
+func argsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
+	res := []*protocol.ArgumentBuilder{}
+	for _, arg := range args {
+		switch arg.(type) {
+		case uint32:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE, Uint32Value: arg.(uint32)})
+		case uint64:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_64_VALUE, Uint64Value: arg.(uint64)})
+		case string:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_STRING_VALUE, StringValue: arg.(string)})
+		case []byte:
+			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_BYTES_VALUE, BytesValue: arg.([]byte)})
+		}
+	}
+	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
 }
 
-func Version() string {
-	return v8worker2.Version()
+func NewV8Worker() Worker {
+	// need a buffered channel for return value
+	value := make(chan interface{}, 1)
+	callback := buildCallback(value)
+
+	return &wrapper{
+		worker: v8worker2.New(callback),
+		callback: callback,
+		value: value,
+	}
 }
 
 var New = NewV8Worker
