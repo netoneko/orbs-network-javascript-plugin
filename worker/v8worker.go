@@ -2,6 +2,8 @@ package worker
 
 import "C"
 import (
+	"fmt"
+	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/ry/v8worker2"
@@ -9,14 +11,27 @@ import (
 )
 
 type wrapper struct {
+	sdkHandler context.SdkHandler
 	worker *v8worker2.Worker
 	callback v8worker2.ReceiveMessageCallback
 	value chan interface{}
 }
 
-func buildCallback(value chan interface{}) v8worker2.ReceiveMessageCallback {
+func buildCallback(handler context.SdkHandler, value chan interface{}) v8worker2.ReceiveMessageCallback {
 	return func(msg []byte) []byte {
-		value <- msg
+		argArray := protocol.ArgumentArrayReader(msg)
+
+		i := argArray.ArgumentsIterator()
+		methodName := i.NextArguments().Uint32Value()
+		requestId := i.NextArguments().Uint32Value()
+
+		if methodName == 0 && requestId == 0 {
+			value <- ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()
+		} else if methodName == 1 && requestId == 1 {
+			addr := handler.SdkAddressGetSignerAddress([]byte("test"), context.PERMISSION_SCOPE_SERVICE)
+			return ArgsToArgumentArray(addr).Raw()
+		}
+
 		return nil
 	}
 }
@@ -36,7 +51,13 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, nil, err
 	}
 
-	w.worker.LoadModule("arguments", `const global = {}; export const Arguments = global;` + string(clientSDK), func(moduleName, referrerName string) int {
+	//textEncoder, err := ioutil.ReadFile("../js/text-encoder-polyfill.js")
+	//if err != nil {
+	//	return  nil, nil, err
+	//}
+
+	w.worker.LoadModule("arguments",
+		`const global = {}; export const Arguments = global;` + string(clientSDK), func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
 	})
@@ -48,7 +69,10 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, err, nil
 	}
 
-	if err := w.worker.SendBytes(args.Raw()); err != nil {
+	//println(TypedArgs("message", "methodArguments", args).Raw())
+
+	if err := w.worker.SendBytes(TypedArgs(uint32(999), uint32(666), args).Raw()); err != nil {
+		fmt.Println("err!", err)
 		return nil, err, nil
 	}
 
@@ -56,15 +80,16 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	return protocol.ArgumentArrayReader(val), nil, err
 }
 
-func NewV8Worker() Worker {
+func NewV8Worker(sdkHandler context.SdkHandler) Worker {
 	// need a buffered channel for return value
 	value := make(chan interface{}, 1)
-	callback := buildCallback(value)
+	callback := buildCallback(sdkHandler, value)
 
 	return &wrapper{
 		worker: v8worker2.New(callback),
 		callback: callback,
 		value: value,
+		sdkHandler: sdkHandler,
 	}
 }
 

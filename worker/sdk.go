@@ -11,8 +11,20 @@ func WrapWithSDK(code string, method string, arguments []interface{}) (string, e
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
-V8Worker2.recv(function(msg) {
-	const val = (function () {
+/**
+  SDK methods start
+**/
+
+function sdkGetSignerAddress() {
+	const response = V8Worker2.send(packedArgumentsEncode([argUint32(1), argUint32(1)]).buffer);
+	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0]
+}
+
+/**
+  SDK methods end
+**/
+
+function contract(methodCallArguments) {
 /** 
   contract code start
 **/
@@ -21,22 +33,38 @@ V8Worker2.recv(function(msg) {
   contract code end
 **/
 
-const methodCallArguments = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
-return {{.method}}(...methodCallArguments);
-	})();
+	return {{.method}}(...methodCallArguments);
+}
 
-	const serializeReturnValue = (val) => {
-    	if (typeof val === "number") {
-			return [argUint32(val)];
-		}
-
-		if (typeof val === "string") {
-			return [argString(val)];
-		}
+function serializeReturnValue(val) {
+	if (typeof val === "number") {
+		return [argUint32(0), argUint32(0), argUint32(val)];
 	}
 
-	const payload = packedArgumentsEncode(serializeReturnValue(val));
-	V8Worker2.send(payload.buffer);
+	if (typeof val === "string") {
+		return [argUint32(0), argUint32(0), argString(val)];
+	}
+
+	if (typeof val === "object") {
+		const protoName = val.__proto__.constructor.name;
+		if (protoName === "Uint8Array") {
+			return [argUint32(0), argUint32(0), argBytes(val)];
+		}
+	}
+}
+
+V8Worker2.recv(function(msg) {
+	const [ methodName, requestId, ...methodCallArguments ] = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
+
+	if (methodName === 999) {
+		const val = contract(methodCallArguments);
+		const payload = packedArgumentsEncode(serializeReturnValue(val));
+		V8Worker2.send(payload.buffer);
+	}
+
+	if (methodName === 721) {
+		_sdkGetSignerAddressCallback(...methodCallArguments);
+	}
 });
 `)
 
@@ -72,5 +100,40 @@ func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
 			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_BYTES_VALUE, BytesValue: arg.([]byte)})
 		}
 	}
+	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+}
+
+func TypedArgs(messageType uint32, id uint32, args *protocol.ArgumentArray) *protocol.ArgumentArray {
+	res := []*protocol.ArgumentBuilder{
+		{
+			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Uint32Value: messageType,
+		},
+		{
+			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Uint32Value: id,
+		},
+	}
+
+	for i := args.ArgumentsIterator(); i.HasNext() ; {
+		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
+	}
+
+	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+}
+
+func ArgsToValue(args *protocol.ArgumentArray) *protocol.ArgumentArray {
+	res := []*protocol.ArgumentBuilder{}
+
+	i := args.ArgumentsIterator()
+
+	// skip 2 steps removing type info
+	i.NextArguments()
+	i.NextArguments()
+
+	for i.HasNext() {
+		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
+	}
+
 	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
 }
