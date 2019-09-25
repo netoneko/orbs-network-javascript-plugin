@@ -41,6 +41,22 @@ function hello(a, b) {
 	require.EqualValues(t, 6, uint32Value)
 }
 
+func TestNewV8Worker_CallMethodWithStringArgument(t *testing.T) {
+	sdkHandler := test.AFakeSdk()
+	worker := NewV8Worker(sdkHandler)
+	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
+function hello(a) {
+	return "hello, " + a
+}
+`, "hello", ArgsToArgumentArray("world"))
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+	require.NotNil(t, outputArgs)
+
+	stringValue := outputArgs.ArgumentsIterator().NextArguments().StringValue()
+	require.EqualValues(t, "hello, world", stringValue)
+}
+
 func TestNewV8Worker_CallSDKHandlerMethod(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
