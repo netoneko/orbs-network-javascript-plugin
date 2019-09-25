@@ -68,14 +68,10 @@ function serializeReturnValue(val) {
 V8Worker2.recv(function(msg) {
 	const [ methodName, requestId, ...methodCallArguments ] = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
 
-	if (methodName === 999) {
+	if (methodName === 0) {
 		const val = contract(methodCallArguments);
 		const payload = packedArgumentsEncode(serializeReturnValue(val));
 		V8Worker2.send(payload.buffer);
-	}
-
-	if (methodName === 721) {
-		_sdkGetSignerAddressCallback(...methodCallArguments);
 	}
 });
 `)
