@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"encoding/binary"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 )
@@ -80,7 +81,36 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 			value := iterator.NextArguments().BytesValue()
 			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, value)
 		case SDK_METHOD_READ_BYTES:
-			results = append(results, dispatcher.handler.SdkStateReadBytes(ctx, permissionScope, key))
+			value := dispatcher.handler.SdkStateReadBytes(ctx, permissionScope, key)
+			results = append(results, value)
+		case SDK_METHOD_WRITE_STRING:
+			value := iterator.NextArguments().StringValue()
+			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, []byte(value))
+		case SDK_METHOD_READ_STRING:
+			value := dispatcher.handler.SdkStateReadBytes(ctx, permissionScope, key)
+			results = append(results, string(value))
+		case SDK_METHOD_WRITE_UINT32:
+			value := make([]byte, 4)
+			binary.LittleEndian.PutUint32(value, iterator.NextArguments().Uint32Value())
+			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, value)
+		case SDK_METHOD_READ_UINT32:
+			value := dispatcher.handler.SdkStateReadBytes(ctx, permissionScope, key)
+			if len(value) < 4 {
+				results = append(results, 0)
+			} else {
+				results = append(results, binary.LittleEndian.Uint32(value))
+			}
+		case SDK_METHOD_WRITE_UINT64:
+			value := make([]byte, 8)
+			binary.LittleEndian.PutUint64(value, iterator.NextArguments().Uint64Value())
+			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, value)
+		case SDK_METHOD_READ_UINT64:
+			value := dispatcher.handler.SdkStateReadBytes(ctx, permissionScope, key)
+			if len(value) < 4 {
+				results = append(results, 0)
+			} else {
+				results = append(results, binary.LittleEndian.Uint64(value))
+			}
 		}
 	}
 

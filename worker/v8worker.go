@@ -64,6 +64,7 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, err, nil
 	}
 
+	// Could be replaced with a call to get arguments and method name
 	if err := worker.SendBytes(TypedArgs(uint32(0), uint32(0), args).Raw()); err != nil {
 		fmt.Println("err!", err)
 		return nil, err, nil
