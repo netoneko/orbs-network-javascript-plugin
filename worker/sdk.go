@@ -15,9 +15,21 @@ const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEn
   SDK methods start
 **/
 
-function sdkGetSignerAddress() {
-	const response = V8Worker2.send(packedArgumentsEncode([argUint32(1), argUint32(1)]).buffer);
-	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0]
+const Address = {
+	GetSignerAddress: () => {
+		const response = V8Worker2.send(packedArgumentsEncode([argUint32(100), argUint32(101)]).buffer);
+		return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
+	}
+}
+
+const State = {
+	WriteBytes: (key, value) => {
+		V8Worker2.send(packedArgumentsEncode([argUint32(300), argUint32(301), argBytes(key), argBytes(value)]).buffer);
+	},
+	ReadBytes: (key) => {
+		const response = V8Worker2.send(packedArgumentsEncode([argUint32(300), argUint32(305), argBytes(key)]).buffer);
+		return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
+	}
 }
 
 /**

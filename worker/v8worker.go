@@ -11,13 +11,12 @@ import (
 )
 
 type wrapper struct {
-	sdkHandler context.SdkHandler
 	worker *v8worker2.Worker
 	callback v8worker2.ReceiveMessageCallback
 	value chan interface{}
 }
 
-func buildCallback(handler context.SdkHandler, value chan interface{}) v8worker2.ReceiveMessageCallback {
+func buildCallback(dispatcher SDKMethodDispatcher, value chan interface{}) v8worker2.ReceiveMessageCallback {
 	return func(msg []byte) []byte {
 		argArray := protocol.ArgumentArrayReader(msg)
 
@@ -27,9 +26,9 @@ func buildCallback(handler context.SdkHandler, value chan interface{}) v8worker2
 
 		if methodName == 0 && requestId == 0 {
 			value <- ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()
-		} else if methodName == 1 && requestId == 1 {
-			addr := handler.SdkAddressGetSignerAddress([]byte("test"), context.PERMISSION_SCOPE_SERVICE)
-			return ArgsToArgumentArray(addr).Raw()
+		} else {
+			// FIXME pass executionContextId
+			return dispatcher.Dispatch([]byte("test"), context.PERMISSION_SCOPE_SERVICE, argArray).Raw()
 		}
 
 		return nil
@@ -83,13 +82,12 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 func NewV8Worker(sdkHandler context.SdkHandler) Worker {
 	// need a buffered channel for return value
 	value := make(chan interface{}, 1)
-	callback := buildCallback(sdkHandler, value)
+	callback := buildCallback(NewMethodDispatcher(sdkHandler), value)
 
 	return &wrapper{
 		worker: v8worker2.New(callback),
 		callback: callback,
 		value: value,
-		sdkHandler: sdkHandler,
 	}
 }
 
