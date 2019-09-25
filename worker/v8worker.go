@@ -41,7 +41,7 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	callback := buildCallback(NewMethodDispatcher(w.sdkHandler), value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
 	worker := v8worker2.New(callback)
 
-	wrappedCode, err := WrapWithSDK(code, methodName.String(), nil)
+	wrappedCode, err := WrapWithSDK(code, methodName.String())
 	if err != nil {
 		return nil, nil, err
 	}

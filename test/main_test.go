@@ -48,15 +48,29 @@ func Test_V8Worker(t *testing.T) {
 	fakeSDK := AFakeSdk()
 	v8Worker := constructor(fakeSDK)
 
-	outputArgs, outputErr, err := v8Worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
-function hello(a, b) {
-	return 1 + a + b
+	contract := `
+const KEY = new Uint8Array([1, 2, 3, 4, 5])
+
+function write(value) {
+	State.WriteBytes(KEY, value)
+	return 0
 }
-`, "hello", worker.ArgsToArgumentArray(uint32(2), uint32(3)))
+
+function read() {
+	return State.ReadBytes(KEY)
+}
+`
+
+	outputArgs, outputErr, err := v8Worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"write", worker.ArgsToArgumentArray([]byte("Diamond Dogs")))
 	require.NoError(t, err)
 	require.NoError(t, outputErr)
-	require.NotNil(t, outputArgs)
 
-	uint32Value := outputArgs.ArgumentsIterator().NextArguments().Uint32Value()
-	require.EqualValues(t, 6, uint32Value)
+	outputArgs, outputErr, err = v8Worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"read", worker.ArgsToArgumentArray())
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+
+	bytesValue := outputArgs.ArgumentsIterator().NextArguments().BytesValue()
+	require.EqualValues(t, []byte("Diamond Dogs"), bytesValue)
 }

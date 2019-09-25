@@ -78,11 +78,8 @@ function testSignerAddress(a, b, c) {
 	require.EqualValues(t, []byte("signer"), bytesValue)
 }
 
-func TestNewV8Worker_ManipulateState(t *testing.T) {
+func TestNewV8Worker_ManipulateStateWithBytes(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
-
-	expectedAddr := sdkHandler.SdkAddressGetSignerAddress([]byte("test"), context.PERMISSION_SCOPE_SERVICE)
-	require.EqualValues(t, []byte("signer"), expectedAddr)
 
 	contract := `
 const KEY = new Uint8Array([1, 2, 3, 4, 5])
@@ -110,4 +107,66 @@ function read() {
 
 	bytesValue := outputArgs.ArgumentsIterator().NextArguments().BytesValue()
 	require.EqualValues(t, []byte("Diamond Dogs"), bytesValue)
+}
+
+func TestNewV8Worker_ManipulateStateWithUint32(t *testing.T) {
+	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
+
+	contract := `
+const KEY = new Uint8Array([1, 2, 3])
+
+function write(value) {
+	State.WriteUint32(KEY, value)
+	return 0
+}
+
+function read() {
+	return State.ReadUint32(KEY)
+}
+`
+
+	worker := NewV8Worker(sdkHandler)
+	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"write", ArgsToArgumentArray(uint32(1982)))
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+
+	outputArgs, outputErr, err = worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"read", ArgsToArgumentArray())
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+
+	uin32Value := outputArgs.ArgumentsIterator().NextArguments().Uint32Value()
+	require.EqualValues(t, 1982, uin32Value)
+}
+
+func TestNewV8Worker_ManipulateStateWithString(t *testing.T) {
+	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
+
+	contract := `
+const KEY = new Uint8Array([1, 2, 3])
+
+function write(value) {
+	State.WriteString(KEY, value)
+	return 0
+}
+
+function read() {
+	return State.ReadString(KEY)
+}
+`
+
+	worker := NewV8Worker(sdkHandler)
+	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"write", ArgsToArgumentArray("Diamond Dogs"))
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+
+	outputArgs, outputErr, err = worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
+		"read", ArgsToArgumentArray())
+	require.NoError(t, err)
+	require.NoError(t, outputErr)
+
+	uin32Value := outputArgs.ArgumentsIterator().NextArguments().StringValue()
+	require.EqualValues(t, "Diamond Dogs", uin32Value)
 }

@@ -2,11 +2,10 @@ package worker
 
 import (
 	"bytes"
-	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"text/template"
 )
 
-func WrapWithSDK(code string, method string, arguments []interface{}) (string, error) {
+func WrapWithSDK(code string, method string) (string, error) {
 	tmpl, err := template.New(`sdk`).Parse(`
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
@@ -16,20 +15,19 @@ const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEn
 **/
 
 const Address = {
-	GetSignerAddress: () => {
-		const response = V8Worker2.send(packedArgumentsEncode([argUint32(100), argUint32(101)]).buffer);
-		return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
-	}
+	GetSignerAddress: {{.sdkMethodGetSignerAddress}},
+	GetCallerAddress: {{.sdkMethodGetCallerAddress}},
 }
 
 const State = {
-	WriteBytes: (key, value) => {
-		V8Worker2.send(packedArgumentsEncode([argUint32(300), argUint32(301), argBytes(key), argBytes(value)]).buffer);
-	},
-	ReadBytes: (key) => {
-		const response = V8Worker2.send(packedArgumentsEncode([argUint32(300), argUint32(305), argBytes(key)]).buffer);
-		return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
-	}
+	WriteBytes: {{.sdkMethodWriteBytes}},
+	ReadBytes: {{.sdkMethodReadBytes}},
+	WriteUint32: {{.sdkMethodWriteUint32}},
+	ReadUint32: {{.sdkMethodReadUint32}},
+	WriteUint64: {{.sdkMethodWriteUint64}},
+	ReadUint64: {{.sdkMethodReadUint64}},
+	WriteString: {{.sdkMethodWriteString}},
+	ReadString: {{.sdkMethodReadString}},
 }
 
 /**
@@ -81,11 +79,7 @@ V8Worker2.recv(function(msg) {
 	}
 
 	buf := bytes.NewBufferString("")
-	if err = tmpl.Execute(buf, map[string]interface{}{
-		"code": code,
-		"method": method,
-		"args": arguments,
-	}); err != nil {
+	if err = tmpl.Execute(buf, getSDKCodeSettings(code, method)); err != nil {
 		return "", err
 	}
 
@@ -94,54 +88,94 @@ V8Worker2.recv(function(msg) {
 	return buf.String(), nil
 }
 
-func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
-	res := []*protocol.ArgumentBuilder{}
-	for _, arg := range args {
-		switch arg.(type) {
-		case uint32:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE, Uint32Value: arg.(uint32)})
-		case uint64:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_UINT_64_VALUE, Uint64Value: arg.(uint64)})
-		case string:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_STRING_VALUE, StringValue: arg.(string)})
-		case []byte:
-			res = append(res, &protocol.ArgumentBuilder{Type: protocol.ARGUMENT_TYPE_BYTES_VALUE, BytesValue: arg.([]byte)})
-		}
+func proxyWriteOnlyMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string) string {
+	tmpl, err := template.New(`sdkProxyMethodCall`).Parse(`
+({{.jsParams}}) => {
+	V8Worker2.send(packedArgumentsEncode([argUint32({{.sdkObject}}), argUint32({{.sdkMethod}}), {{.jsWrappedParams}}]).buffer);
+}`)
+
+	if err != nil {
+		panic(err)
 	}
-	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+
+	buf := bytes.NewBufferString("")
+	tmpl.Execute(buf, map[string]interface{}{
+		"sdkObject": sdkObject,
+		"sdkMethod": sdkMethod,
+		"jsParams": jsParams,
+		"jsWrappedParams": jsWrappedParams,
+	})
+
+	return buf.String()
 }
 
-func TypedArgs(messageType uint32, id uint32, args *protocol.ArgumentArray) *protocol.ArgumentArray {
-	res := []*protocol.ArgumentBuilder{
-		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
-			Uint32Value: messageType,
-		},
-		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
-			Uint32Value: id,
-		},
+// FIXME support contract calls
+func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string) string {
+	tmpl, err := template.New(`sdkProxyMethodCall`).Parse(`
+({{.jsParams}}) => {
+	const response = V8Worker2.send(packedArgumentsEncode([argUint32({{.sdkObject}}), argUint32({{.sdkMethod}}), {{.jsWrappedParams}}]).buffer);
+	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
+}`)
+
+	if err != nil {
+		panic(err)
 	}
 
-	for i := args.ArgumentsIterator(); i.HasNext() ; {
-		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
-	}
+	buf := bytes.NewBufferString("")
+	tmpl.Execute(buf, map[string]interface{}{
+		"sdkObject": sdkObject,
+		"sdkMethod": sdkMethod,
+		"jsParams": jsParams,
+		"jsWrappedParams": jsWrappedParams,
+	})
 
-	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+	return buf.String()
 }
 
-func ArgsToValue(args *protocol.ArgumentArray) *protocol.ArgumentArray {
-	res := []*protocol.ArgumentBuilder{}
-
-	i := args.ArgumentsIterator()
-
-	// skip 2 steps removing type info
-	i.NextArguments()
-	i.NextArguments()
-
-	for i.HasNext() {
-		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
+func getSDKCodeSettings(code string, method string) map[string]interface{} {
+	return map[string]interface{}{
+		"code": code,
+		"method": method,
+		"sdkMethodGetCallerAddress": proxyReadMethodCall(
+			SDK_OBJECT_ADDRESS, SDK_METHOD_GET_CALLER_ADDRESS,
+			"", "",
+		),
+		"sdkMethodGetSignerAddress": proxyReadMethodCall(
+			SDK_OBJECT_ADDRESS, SDK_METHOD_GET_SIGNER_ADDRESS,
+			"", "",
+		),
+		"sdkMethodWriteBytes": proxyWriteOnlyMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_WRITE_BYTES,
+			"key, value", "argBytes(key), argBytes(value)",
+		),
+		"sdkMethodReadBytes": proxyReadMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_READ_BYTES,
+			"key", "argBytes(key)",
+		),
+		"sdkMethodWriteUint32": proxyWriteOnlyMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_WRITE_UINT32,
+			"key, value", "argBytes(key), argUint32(value)",
+		),
+		"sdkMethodReadUint32": proxyReadMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_READ_UINT32,
+			"key", "argBytes(key)",
+		),
+		"sdkMethodWriteUint64": proxyWriteOnlyMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_WRITE_UINT64,
+			"key, value", "argBytes(key), argUint64(value)",
+		),
+		"sdkMethodReadUint64": proxyReadMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_READ_UINT64,
+			"key", "argBytes(key)",
+		),
+		"sdkMethodWriteString": proxyWriteOnlyMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_WRITE_STRING,
+			"key, value", "argBytes(key), argString(value)",
+		),
+		"sdkMethodReadString": proxyReadMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_READ_STRING,
+			"key", "argBytes(key)",
+		),
 	}
-
-	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
 }
+
