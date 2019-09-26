@@ -3,11 +3,11 @@ package worker
 import "C"
 import (
 	"fmt"
+	"github.com/netoneko/orbs-network-javascript-plugin/packed"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/ry/v8worker2"
-	"io/ioutil"
 )
 
 type wrapper struct {
@@ -46,13 +46,8 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, nil, err
 	}
 
-	clientSDK, err := ioutil.ReadFile("../js/arguments.js")
-	if err != nil {
-		return nil, nil, err
-	}
-
 	worker.LoadModule("arguments",
-		`const global = {}; export const Arguments = global;` + string(clientSDK), func(moduleName, referrerName string) int {
+		`const global = {}; export const Arguments = global;` + string(packed.ArgumentsJS()), func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
 	})
@@ -71,6 +66,9 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	}
 
 	val := (<-value).([]byte)
+	valCopy := make([]byte, len(val))
+	copy(valCopy, val)
+	worker.TerminateExecution()
 	return protocol.ArgumentArrayReader(val), nil, err
 }
 

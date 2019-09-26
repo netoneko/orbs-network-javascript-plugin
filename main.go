@@ -1,9 +1,5 @@
 package main
 
-type test string
+import "github.com/netoneko/orbs-network-javascript-plugin/worker"
 
-func (*test) Hello() string {
-	return "hello"
-}
-
-var Test test
+var New = worker.NewV8Worker

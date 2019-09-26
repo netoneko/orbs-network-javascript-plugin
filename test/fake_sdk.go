@@ -4,8 +4,6 @@
 // This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
 // The above notice should be included in all copies or substantial portions of the software.
 
-// Picked up from orbs-contract-sdk
-
 package test
 
 import (
@@ -22,21 +20,29 @@ type stateMap map[string][]byte
 var EXAMPLE_CONTEXT_ID = []byte{0x43}
 
 type Mockery interface {
-	MockEthereumGetBlockNumber(block int)                                                                                                                           // TODO get return valus
+	MockEthereumGetBlockNumber(block int)
+	MockEthereumGetBlockNumberByTime(block int, timestamp int)
+	MockEthereumGetBlockTime(timestamp int)
+	MockEthereumGetBlockTimeByNumber(block int, timestamp int)
 	MockEthereumLog(address string, abiJson string, ethTxHash string, eventName string, outEthBlockNumber int, outEthTxIndex int, outMutator func(out interface{})) // TODO get return valus
 	MockEthereumCallMethod(address string, abiJson string, methodName string, outMutator func(out interface{}), args ...interface{})
 	MockEthereumCallMethodAtBlock(blockNumber uint64, address string, abiJson string, methodName string, outMutator func(out interface{}), args ...interface{})
 	MockServiceCallMethod(serviceName string, methodName string, out []interface{}, args ...interface{})
+	MockEnvBlockHeight(height int)
+	MockEnvBlockTimestamp(timestamp int)
+	MockEnvBlockProposerAddress(addr []byte)
 	MockEmitEvent(eventFunctionSignature interface{}, args ...interface{})
+	MockCallContractAddress(name string, value []byte)
 	VerifyMocks()
 }
 
 type ethereumStub struct {
-	key         []interface{}
-	outMutator  func(interface{})
-	blockHeight uint64
-	txIndex     uint32
-	satisfied   bool
+	key            []interface{}
+	outMutator     func(interface{})
+	blockHeight    uint64
+	blockTimestamp uint64
+	txIndex        uint32
+	satisfied      bool
 }
 
 type eventStub struct {
@@ -50,23 +56,33 @@ type serviceStub struct {
 	satisfied bool
 }
 
+type addressStub struct {
+	key       []interface{}
+	out       []byte
+	satisfied bool
+}
+
 type mockHandler struct {
 	signerAddress []byte
 	callerAddress []byte
+
+	blockProposerAddress []byte
+	blockHeight          uint64
+	blockTimestamp       uint64
 
 	state         stateMap
 	stateKeyOrder []string
 	stateReads    uint64
 	stateWrites   uint64
 
-	ethereumStubs  []*ethereumStub
-	serviceStubs   []*serviceStub
-	eventStubs     []*eventStub
-	ethBlockNumber uint64
+	ethereumStubs []*ethereumStub
+	serviceStubs  []*serviceStub
+	eventStubs    []*eventStub
+	addressStubs  []*addressStub
 }
 
 type StateDiff struct {
-	Key []byte
+	Key   []byte
 	Value []byte
 }
 
@@ -140,6 +156,48 @@ func (m *mockHandler) SdkEthereumGetBlockNumber(ctx context.ContextId, permissio
 	panic(errors.Errorf("No Ethereum call stubbed for GetBlockNumber"))
 }
 
+func (m *mockHandler) SdkEthereumGetBlockNumberByTime(ctx context.ContextId, permissionScope context.PermissionScope, ethTimestamp uint64) (ethBlockNumber uint64) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockNumberByTime", ethTimestamp)
+
+	for _, stub := range m.ethereumStubs {
+		if keyEquals(stub.key, key) {
+			stub.satisfied = true
+			return stub.blockHeight
+		}
+	}
+
+	panic(errors.Errorf("No Ethereum call stubbed for GetBlockNumberByTime"))
+}
+
+func (m *mockHandler) SdkEthereumGetBlockTime(ctx context.ContextId, permissionScope context.PermissionScope) (ethTimestamp uint64) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockTime")
+
+	for _, stub := range m.ethereumStubs {
+		if keyEquals(stub.key, key) {
+			stub.satisfied = true
+			return stub.blockTimestamp
+		}
+	}
+
+	panic(errors.Errorf("No Ethereum call stubbed for GetBlockTime"))
+}
+
+func (m *mockHandler) SdkEthereumGetBlockTimeByNumber(ctx context.ContextId, permissionScope context.PermissionScope, ethBlockNumber uint64) (ethTimestamp uint64) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockTimeByNumber", ethBlockNumber)
+
+	for _, stub := range m.ethereumStubs {
+		if keyEquals(stub.key, key) {
+			stub.satisfied = true
+			return stub.blockTimestamp
+		}
+	}
+
+	panic(errors.Errorf("No Ethereum call stubbed for GetBlockNumber"))
+}
+
 func (m *mockHandler) SdkEthereumGetTransactionLog(ctx context.ContextId, permissionScope context.PermissionScope, contractAddress string, jsonAbi string, ethTransactionId string, eventName string, out interface{}) (ethBlockNumber uint64, ethTxIndex uint32) {
 	var key []interface{}
 	key = append(key, contractAddress, jsonAbi, ethTransactionId, eventName)
@@ -168,8 +226,16 @@ func (m *mockHandler) SdkAddressGetOwnAddress(ctx context.ContextId, permissionS
 }
 
 func (m *mockHandler) SdkAddressGetContractAddress(ctx context.ContextId, permissionScope context.PermissionScope, contractName string) []byte {
-	panic("Not implemented")
-	return []byte{}
+	var key []interface{}
+	key = append(key, "contract name", contractName)
+
+	for _, stub := range m.addressStubs {
+		if keyEquals(stub.key, key) {
+			stub.satisfied = true
+			return stub.out
+		}
+	}
+	panic(errors.Errorf("No contract address stubed for name %s", contractName))
 }
 
 func (m *mockHandler) SdkEventsEmitEvent(ctx context.ContextId, permissionScope context.PermissionScope, eventFunctionSignature interface{}, args ...interface{}) {
@@ -187,12 +253,24 @@ func (m *mockHandler) SdkEventsEmitEvent(ctx context.ContextId, permissionScope 
 }
 
 func (m *mockHandler) SdkEnvGetBlockHeight(ctx context.ContextId, permissionScope context.PermissionScope) uint64 {
-	m.ethBlockNumber++
-	return m.ethBlockNumber
+	if m.blockHeight == 0 {
+		panic(errors.Errorf("No block height set"))
+	}
+	return m.blockHeight
 }
 
 func (m *mockHandler) SdkEnvGetBlockTimestamp(ctx context.ContextId, permissionScope context.PermissionScope) uint64 {
+	if m.blockTimestamp != 0 {
+		return m.blockTimestamp
+	}
 	return uint64(time.Now().UnixNano())
+}
+
+func (m *mockHandler) SdkEnvGetBlockProposerAddress(ctx context.ContextId, permissionScope context.PermissionScope) []byte {
+	if m.blockProposerAddress == nil || len(m.blockProposerAddress) == 0 {
+		panic(errors.Errorf("No block proposer address set"))
+	}
+	return m.blockProposerAddress
 }
 
 func (m *mockHandler) SdkEnvGetVirtualChainId(ctx context.ContextId, permissionScope context.PermissionScope) uint32 {
@@ -225,6 +303,24 @@ func (m *mockHandler) MockEthereumGetBlockNumber(block int) {
 	m.ethereumStubs = append(m.ethereumStubs, &ethereumStub{key: key, outMutator: nil, blockHeight: uint64(block)})
 }
 
+func (m *mockHandler) MockEthereumGetBlockNumberByTime(block int, timestamp int) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockNumberByTime", uint64(timestamp))
+	m.ethereumStubs = append(m.ethereumStubs, &ethereumStub{key: key, outMutator: nil, blockHeight: uint64(block), blockTimestamp: uint64(timestamp)})
+}
+
+func (m *mockHandler) MockEthereumGetBlockTime(timestamp int) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockTime")
+	m.ethereumStubs = append(m.ethereumStubs, &ethereumStub{key: key, outMutator: nil, blockTimestamp: uint64(timestamp)})
+}
+
+func (m *mockHandler) MockEthereumGetBlockTimeByNumber(block int, timestamp int) {
+	var key []interface{}
+	key = append(key, "SdkEthereumGetBlockTimeByNumber", uint64(block))
+	m.ethereumStubs = append(m.ethereumStubs, &ethereumStub{key: key, outMutator: nil, blockHeight: uint64(block), blockTimestamp: uint64(timestamp)})
+}
+
 func (m *mockHandler) MockServiceCallMethod(serviceName string, methodName string, out []interface{}, args ...interface{}) {
 	var key []interface{}
 	key = append(key, serviceName, methodName)
@@ -232,10 +328,28 @@ func (m *mockHandler) MockServiceCallMethod(serviceName string, methodName strin
 	m.serviceStubs = append(m.serviceStubs, &serviceStub{key: key, out: out})
 }
 
+func (m *mockHandler) MockEnvBlockHeight(block int) {
+	m.blockHeight = uint64(block)
+}
+
+func (m *mockHandler) MockEnvBlockTimestamp(time int) {
+	m.blockTimestamp = uint64(time)
+}
+
+func (m *mockHandler) MockEnvBlockProposerAddress(addr []byte) {
+	m.blockProposerAddress = addr
+}
+
 func (m *mockHandler) MockEmitEvent(eventFunctionSignature interface{}, args ...interface{}) {
 	var key []interface{}
 	key = append(key, args...)
 	m.eventStubs = append(m.eventStubs, &eventStub{key: key})
+}
+
+func (m *mockHandler) MockCallContractAddress(name string, value []byte) {
+	var key []interface{}
+	key = append(key, "contract name", name, )
+	m.addressStubs = append(m.addressStubs, &addressStub{key: key, out: value})
 }
 
 func (m *mockHandler) VerifyMocks() {
@@ -254,15 +368,20 @@ func (m *mockHandler) VerifyMocks() {
 			panic(errors.Errorf("ethereum mock set but not called"))
 		}
 	}
+	for _, stub := range m.addressStubs {
+		if !stub.satisfied {
+			panic(errors.Errorf("addresses mock set but not called"))
+		}
+	}
 }
 
-func (m	*mockHandler) getStateDiffs() []*StateDiff {
+func (m *mockHandler) getStateDiffs() []*StateDiff {
 	var diffs []*StateDiff
 
 	for _, k := range m.stateKeyOrder {
 		byteKey, _ := hex.DecodeString(k)
 		diffs = append(diffs, &StateDiff{
-			Key: byteKey,
+			Key:   byteKey,
 			Value: m.state[k],
 		})
 	}

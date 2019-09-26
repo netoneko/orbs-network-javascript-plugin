@@ -16,10 +16,12 @@ func TestMethodDispatcher(t *testing.T) {
 	signerAddress := packedSignerAddress.ArgumentsIterator().NextArguments().BytesValue()
 	require.EqualValues(t, []byte("signer"), signerAddress)
 
+	handler.MockEnvBlockHeight(1221)
+
 	packedBlockHeight := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
 		ArgsToArgumentArray(SDK_OBJECT_ENV, SDK_METHOD_GET_BLOCK_HEIGHT))
 	blockHeight := packedBlockHeight.ArgumentsIterator().NextArguments().Uint64Value()
-	require.EqualValues(t, 1, blockHeight)
+	require.EqualValues(t, 1221, blockHeight)
 }
 
 func TestMethodDispatcherWithState(t *testing.T) {

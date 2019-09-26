@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/netoneko/orbs-network-javascript-plugin/pack"
 	"github.com/netoneko/orbs-network-javascript-plugin/worker"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
@@ -11,24 +12,9 @@ import (
 	"testing"
 )
 
-type Hello interface {
-	Hello() string
-}
-
-func Test_Main(t *testing.T) {
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", "./main.bin", "..")
-	out, err := cmd.CombinedOutput()
-	fmt.Println(string(out))
+func TestPackArguments(t *testing.T) {
+	err := pack.Pack("../js/arguments.js", "../packed/arguments_packed.go", "packed", "ArgumentsJS")
 	require.NoError(t, err)
-
-	plug, err := plugin.Open("./main.bin")
-	require.NoError(t, err)
-
-	symbol, err := plug.Lookup("Test")
-	require.NoError(t, err)
-
-	h := symbol.(Hello)
-	require.EqualValues(t, "hello", h.Hello())
 }
 
 func Test_V8Worker(t *testing.T) {
