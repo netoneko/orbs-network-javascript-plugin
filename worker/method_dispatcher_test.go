@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"github.com/netoneko/orbs-network-javascript-plugin/test"
+	"github.com/orbs-network/orbs-network-javascript-plugin/test"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/stretchr/testify/require"
 	"testing"

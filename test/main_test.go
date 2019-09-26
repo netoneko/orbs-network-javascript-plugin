@@ -2,8 +2,8 @@ package test
 
 import (
 	"fmt"
-	"github.com/netoneko/orbs-network-javascript-plugin/pack"
-	"github.com/netoneko/orbs-network-javascript-plugin/worker"
+	"github.com/orbs-network/orbs-network-javascript-plugin/pack"
+	"github.com/orbs-network/orbs-network-javascript-plugin/worker"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"

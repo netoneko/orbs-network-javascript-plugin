@@ -3,7 +3,7 @@ package worker
 import "C"
 import (
 	"fmt"
-	"github.com/netoneko/orbs-network-javascript-plugin/packed"
+	"github.com/orbs-network/orbs-network-javascript-plugin/packed"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
