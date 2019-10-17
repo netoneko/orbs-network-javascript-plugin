@@ -2,3 +2,4 @@ test/*.bin
 node_modules
 .idea
 *_packed.go
+_bin

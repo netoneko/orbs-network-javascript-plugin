@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/orbs-network/orbs-network-go/services/processor"
 	"github.com/orbs-network/orbs-network-javascript-plugin/pack"
 	"github.com/orbs-network/orbs-network-javascript-plugin/worker"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
@@ -29,7 +30,7 @@ func Test_V8Worker(t *testing.T) {
 	symbol, err := plug.Lookup("New")
 	require.NoError(t, err)
 
-	constructor := *symbol.(*func(context.SdkHandler) worker.Worker)
+	constructor := symbol.(func(context.SdkHandler) processor.StatelessProcessor)
 
 	fakeSDK := AFakeSdk()
 	v8Worker := constructor(fakeSDK)
