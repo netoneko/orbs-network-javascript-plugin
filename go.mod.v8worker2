@@ -1,0 +1,3 @@
+module github.com/ry/v8worker2
+
+go 1.12
