@@ -1,0 +1,8 @@
+*/
+!orbs-network-go
+!orbs-network-javascript-plugin
+_bin
+_out
+_logs
+orbs-network-go/vendor
+orbs-network-javascript-plugin/vendor

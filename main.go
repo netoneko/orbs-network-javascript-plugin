@@ -9,3 +9,7 @@ import (
 func New(handler context.SdkHandler) processor.StatelessProcessor {
 	return worker.NewV8Worker(handler)
 }
+
+func main() {
+	// stub
+}
