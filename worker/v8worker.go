@@ -77,5 +77,3 @@ func NewV8Worker(sdkHandler context.SdkHandler) Worker {
 		sdkHandler: sdkHandler,
 	}
 }
-
-var New = NewV8Worker
