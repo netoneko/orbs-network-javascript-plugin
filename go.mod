@@ -2,9 +2,9 @@ module github.com/orbs-network/orbs-network-javascript-plugin
 
 go 1.12
 
-replace github.com/orbs-network/orbs-network-go => /Users/kirill/gopath/src/github.com/orbs-network/orbs-network-go
+replace github.com/orbs-network/orbs-network-go => ../orbs-network-go
 
-replace github.com/ry/v8worker2 => /Users/kirill/gopath/src/github.com/orbs-network/orbs-network-javascript-plugin/vendor/github.com/ry/v8worker2
+replace github.com/ry/v8worker2 => ./vendor/github.com/ry/v8worker2
 
 require (
 	github.com/VividCortex/ewma v1.1.1
