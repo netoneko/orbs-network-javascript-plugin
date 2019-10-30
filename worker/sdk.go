@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-func WrapWithSDK(code string, method string) (string, error) {
+func DefineSDK() (string, error) {
 	tmpl, err := template.New(`sdk`).Parse(`
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
@@ -14,12 +14,12 @@ const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEn
   SDK methods start
 **/
 
-const Address = {
+export const Address = {
 	GetSignerAddress: {{.sdkMethodGetSignerAddress}},
 	GetCallerAddress: {{.sdkMethodGetCallerAddress}},
 }
 
-const State = {
+export const State = {
 	WriteBytes: {{.sdkMethodWriteBytes}},
 	ReadBytes: {{.sdkMethodReadBytes}},
 	WriteUint32: {{.sdkMethodWriteUint32}},
@@ -33,6 +33,27 @@ const State = {
 /**
   SDK methods end
 **/
+`)
+
+	if err != nil {
+		return "", err
+	}
+
+	buf := bytes.NewBufferString("")
+	if err = tmpl.Execute(buf, getSDKSettings()); err != nil {
+		return "", err
+	}
+
+	//println(buf.String())
+
+	return buf.String(), nil
+}
+
+func WrapContract(code string, method string) (string, error) {
+	tmpl, err := template.New(`sdk`).Parse(`
+import { Arguments } from "arguments";
+import { Address, State } from "orbs-contract-sdk/v1";
+const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
 function contract(methodCallArguments) {
 /** 
@@ -79,7 +100,7 @@ V8Worker2.recv(function(msg) {
 	}
 
 	buf := bytes.NewBufferString("")
-	if err = tmpl.Execute(buf, getSDKCodeSettings(code, method)); err != nil {
+	if err = tmpl.Execute(buf, getCodeSettings(code, method)); err != nil {
 		return "", err
 	}
 
@@ -132,10 +153,8 @@ func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, js
 	return buf.String()
 }
 
-func getSDKCodeSettings(code string, method string) map[string]interface{} {
+func getSDKSettings() map[string]interface{} {
 	return map[string]interface{}{
-		"code": code,
-		"method": method,
 		"sdkMethodGetCallerAddress": proxyReadMethodCall(
 			SDK_OBJECT_ADDRESS, SDK_METHOD_GET_CALLER_ADDRESS,
 			"", "",
@@ -176,6 +195,13 @@ func getSDKCodeSettings(code string, method string) map[string]interface{} {
 			SDK_OBJECT_STATE, SDK_METHOD_READ_STRING,
 			"key", "argBytes(key)",
 		),
+	}
+}
+
+func getCodeSettings(code string, method string) map[string]interface{} {
+	return map[string]interface{}{
+		"code": code,
+		"method": method,
 	}
 }
 

@@ -41,17 +41,25 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	callback := buildCallback(NewMethodDispatcher(w.sdkHandler), value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
 	worker := v8worker2.New(callback)
 
-	wrappedCode, err := WrapWithSDK(code, methodName.String())
+	worker.LoadModule("arguments",
+		`const global = {}; export const Arguments = global;` + string(packed.ArgumentsJS()), func(moduleName, referrerName string) int {
+			println("resolved", moduleName, referrerName)
+			return 0
+	})
+
+	sdkCode, err := DefineSDK()
 	if err != nil {
 		return nil, nil, err
 	}
-
-	worker.LoadModule("arguments",
-		`const global = {}; export const Arguments = global;` + string(packed.ArgumentsJS()), func(moduleName, referrerName string) int {
-		println("resolved", moduleName, referrerName)
-		return 0
+	worker.LoadModule("orbs-contract-sdk/v1", sdkCode, func(moduleName, referrerName string) int {
+			println("resolved", moduleName, referrerName)
+			return 0
 	})
 
+	wrappedCode, err := WrapContract(code, methodName.String())
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := worker.LoadModule(string(executionContextId) + ".js", wrappedCode, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0

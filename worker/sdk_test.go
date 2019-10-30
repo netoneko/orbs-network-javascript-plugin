@@ -65,6 +65,7 @@ func TestNewV8Worker_CallSDKHandlerMethod(t *testing.T) {
 
 	worker := NewV8Worker(sdkHandler)
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
+//import { Address } from "orbs-contract-sdk/v1";
 function testSignerAddress(a, b, c) {
 	const address = Address.GetSignerAddress()
 	return address 
@@ -82,6 +83,7 @@ func TestNewV8Worker_ManipulateStateWithBytes(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
+//import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3, 4, 5])
 
 function write(value) {
@@ -113,6 +115,7 @@ func TestNewV8Worker_ManipulateStateWithUint32(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
+//import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
 function write(value) {
@@ -144,6 +147,7 @@ func TestNewV8Worker_ManipulateStateWithString(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
+//import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
 function write(value) {
