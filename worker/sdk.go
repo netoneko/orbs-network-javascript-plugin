@@ -2,10 +2,11 @@ package worker
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 )
 
-func DefineSDK() (string, error) {
+func DefineSDK() string {
 	tmpl, err := template.New(`sdk`).Parse(`
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
@@ -53,15 +54,15 @@ export const Verify = {
 `)
 
 	if err != nil {
-		return "", err
+		panic(fmt.Sprintf("failed to parse SDK bindings template: %s", err))
 	}
 
 	buf := bytes.NewBufferString("")
 	if err = tmpl.Execute(buf, getSDKSettings()); err != nil {
-		return "", err
+		panic(fmt.Sprintf("failed to generate SDK bindings: %s", err))
 	}
 
 	//println(buf.String())
 
-	return buf.String(), nil
+	return buf.String()
 }

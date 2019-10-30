@@ -1,10 +1,8 @@
 package worker
 
-import "C"
 import (
 	"fmt"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
-	"github.com/orbs-network/orbs-network-javascript-plugin/packed"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/ry/v8worker2"
@@ -23,22 +21,26 @@ type Worker interface {
 	ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error)
 }
 
+var ARGUMENTS_CODE = exportArgumentsJS()
+var SDK_CODE = DefineSDK()
+
 func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error) {
 	value := make(chan executionResult, 1) // need a buffered channel for return value
 	callback := NewMethodDispatcher(w.sdkHandler).GetCallback(value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
 	worker := v8worker2.New(callback)
 
+	//start := time.Now()
 	worker.LoadModule("arguments",
-		`const global = {}; export const Arguments = global;`+string(packed.ArgumentsJS()), func(moduleName, referrerName string) int {
+		ARGUMENTS_CODE, func(moduleName, referrerName string) int {
 			println("resolved", moduleName, referrerName)
 			return 0
 		})
+	//println("Loading arguments library:", time.Since(start).String())
 
-	sdkCode, err := DefineSDK()
 	if err != nil {
 		return nil, nil, err
 	}
-	worker.LoadModule("orbs-contract-sdk/v1", sdkCode, func(moduleName, referrerName string) int {
+	worker.LoadModule("orbs-contract-sdk/v1", SDK_CODE, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
 	})
