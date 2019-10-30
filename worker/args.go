@@ -1,6 +1,9 @@
 package worker
 
-import "github.com/orbs-network/orbs-spec/types/go/protocol"
+import (
+	"github.com/orbs-network/orbs-network-javascript-plugin/packed"
+	"github.com/orbs-network/orbs-spec/types/go/protocol"
+)
 
 func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
 	res := []*protocol.ArgumentBuilder{}
@@ -22,16 +25,16 @@ func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
 func TypedArgs(messageType uint32, id uint32, args *protocol.ArgumentArray) *protocol.ArgumentArray {
 	res := []*protocol.ArgumentBuilder{
 		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Type:        protocol.ARGUMENT_TYPE_UINT_32_VALUE,
 			Uint32Value: messageType,
 		},
 		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Type:        protocol.ARGUMENT_TYPE_UINT_32_VALUE,
 			Uint32Value: id,
 		},
 	}
 
-	for i := args.ArgumentsIterator(); i.HasNext() ; {
+	for i := args.ArgumentsIterator(); i.HasNext(); {
 		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
 	}
 
@@ -52,4 +55,8 @@ func ArgsToValue(args *protocol.ArgumentArray) *protocol.ArgumentArray {
 	}
 
 	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
+}
+
+func exportArgumentsJS() string {
+	return `const global = {}; export const Arguments = global;` + string(packed.ArgumentsJS())
 }
