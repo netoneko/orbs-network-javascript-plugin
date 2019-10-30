@@ -17,6 +17,9 @@ const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEn
 export const Address = {
 	getSignerAddress: {{.sdkMethodGetSignerAddress}},
 	getCallerAddress: {{.sdkMethodGetCallerAddress}},
+	validateAddress: () => {
+    	// FIXME address validation is not part of the SDK handler
+	}
 }
 
 export const State = {
@@ -30,11 +33,20 @@ export const State = {
 	readString: {{.sdkMethodReadString}},
 }
 
+export const Events = {
+	emitEvent: () => {
+		// FIXME not implemented
+	}
+}
+
 export const Uint64 = Number; // FIXME later
 export const Uint32 = Number;
 
 export const Verify = {
 	bytes: () => {
+		// FIXME not implemented
+	},
+	uint32: () => {
 		// FIXME not implemented
 	},
 	uint64: () => {

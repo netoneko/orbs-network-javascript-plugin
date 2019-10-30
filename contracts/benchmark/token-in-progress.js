@@ -1,4 +1,4 @@
-import { Address, State, Verify, Uint32 } from "orbs-contract-sdk/v1";
+import { Address, State, Events, Verify, Uint32 } from "orbs-contract-sdk/v1";
 
 // Define uint32 later
 const TOTAL_SUPPLY = Uint32("10000000");
@@ -33,14 +33,16 @@ export function transfer(amount, targetAddress) {
 
     // recipient
     Address.validateAddress(targetAddress);
-    const targetBalance = State.readUint32(targetAddress);
+    const targetBalance = State.readUint32(targetAddress) || 0;
+    V8Worker2.print("read", targetBalance)
     State.writeUint32(targetAddress, targetBalance+amount);
+    V8Worker2.print("writing", targetBalance+amount)
 
-    Events.emitEvent(TransferEvent, from, to, amount);
+    Events.emitEvent(TransferEvent, callerAddress, targetAddress, amount);
 }
 
-export function getBalance() {
-    Verify.Bytes(targetAddress);
+export function balanceOf(targetAddress) {
+    Verify.bytes(targetAddress);
     Address.validateAddress(targetAddress);
     return State.readUint32(targetAddress);
 }

@@ -69,7 +69,8 @@ V8Worker2.recv(function(msg) {
 
 			returnValue = {{.method}}(...methodCallArguments);
 		} catch (e) {
-			returnValue = e;			
+			returnValue = e;
+			V8Worker2.print(e);
 		}
 
 		const payload = packedArgumentsEncode(serializeReturnValue(returnValue));

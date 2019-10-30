@@ -1,4 +1,4 @@
-import { Address, State, Verify, Uint64 } from "orbs-contract-sdk/v1";
+import { Address, State, Events, Verify, Uint64 } from "orbs-contract-sdk/v1";
 
 // Define uint64 later
 const TOTAL_SUPPLY = Uint64("10000000000");
@@ -36,10 +36,10 @@ export function transfer(amount, targetAddress) {
     const targetBalance = State.readUint64(targetAddress);
     State.writeUint64(targetAddress, targetBalance+amount);
 
-    Events.emitEvent(TransferEvent, from, to, amount);
+    Events.emitEvent(TransferEvent, callerAddress, targetAddress, amount);
 }
 
-export function getBalance() {
+export function balanceOf(targetAddress) {
     Verify.Bytes(targetAddress);
     Address.validateAddress(targetAddress);
     return State.readUint64(targetAddress);
