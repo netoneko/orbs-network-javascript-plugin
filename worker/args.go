@@ -22,16 +22,16 @@ func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
 func TypedArgs(messageType uint32, id uint32, args *protocol.ArgumentArray) *protocol.ArgumentArray {
 	res := []*protocol.ArgumentBuilder{
 		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Type:        protocol.ARGUMENT_TYPE_UINT_32_VALUE,
 			Uint32Value: messageType,
 		},
 		{
-			Type: protocol.ARGUMENT_TYPE_UINT_32_VALUE,
+			Type:        protocol.ARGUMENT_TYPE_UINT_32_VALUE,
 			Uint32Value: id,
 		},
 	}
 
-	for i := args.ArgumentsIterator(); i.HasNext() ; {
+	for i := args.ArgumentsIterator(); i.HasNext(); {
 		res = append(res, protocol.ArgumentBuilderFromRaw(i.NextArguments().Raw()))
 	}
 

@@ -121,9 +121,9 @@ func proxyWriteOnlyMethodCall(sdkObject uint32, sdkMethod uint32, jsParams strin
 
 	buf := bytes.NewBufferString("")
 	tmpl.Execute(buf, map[string]interface{}{
-		"sdkObject": sdkObject,
-		"sdkMethod": sdkMethod,
-		"jsParams": jsParams,
+		"sdkObject":       sdkObject,
+		"sdkMethod":       sdkMethod,
+		"jsParams":        jsParams,
 		"jsWrappedParams": jsWrappedParams,
 	})
 
@@ -144,9 +144,9 @@ func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, js
 
 	buf := bytes.NewBufferString("")
 	tmpl.Execute(buf, map[string]interface{}{
-		"sdkObject": sdkObject,
-		"sdkMethod": sdkMethod,
-		"jsParams": jsParams,
+		"sdkObject":       sdkObject,
+		"sdkMethod":       sdkMethod,
+		"jsParams":        jsParams,
 		"jsWrappedParams": jsWrappedParams,
 	})
 
@@ -200,8 +200,7 @@ func getSDKSettings() map[string]interface{} {
 
 func getCodeSettings(code string, method string) map[string]interface{} {
 	return map[string]interface{}{
-		"code": code,
+		"code":   code,
 		"method": method,
 	}
 }
-

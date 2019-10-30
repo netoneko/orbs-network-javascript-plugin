@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"github.com/orbs-network/orbs-network-javascript-plugin/test"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
+	"github.com/orbs-network/orbs-network-javascript-plugin/test"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
 
