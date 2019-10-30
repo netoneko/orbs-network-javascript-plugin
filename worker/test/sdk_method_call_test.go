@@ -29,3 +29,24 @@ function hello(a, b) {
 	uint32Value := worker.callMethodWithoutErrors("hello", ArgsToArgumentArray(uint32(2), uint32(3)))
 	require.EqualValues(t, 6, uint32Value.Uint32Value())
 }
+
+func BenchmarkMethodCall(b *testing.B) {
+	owner := []byte("owner")
+	sdkHandler := test.AFakeSdkFor(owner, owner)
+
+	contract := `
+function test(a, b) {
+	return a + b
+}
+`
+	worker := newTestWorker(nil, sdkHandler, string(contract))
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		value := worker.callMethodWithoutErrors("test", ArgsToArgumentArray(uint32(1), uint32(2)))
+		if value.Uint32Value() != uint32(3) {
+			b.Fail()
+		}
+	}
+	b.StopTimer()
+}

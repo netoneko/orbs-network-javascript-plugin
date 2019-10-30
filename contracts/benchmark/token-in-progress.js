@@ -33,10 +33,8 @@ export function transfer(amount, targetAddress) {
 
     // recipient
     Address.validateAddress(targetAddress);
-    const targetBalance = State.readUint32(targetAddress) || 0;
-    V8Worker2.print("read", targetBalance)
+    const targetBalance = State.readUint32(targetAddress);
     State.writeUint32(targetAddress, targetBalance+amount);
-    V8Worker2.print("writing", targetBalance+amount)
 
     Events.emitEvent(TransferEvent, callerAddress, targetAddress, amount);
 }

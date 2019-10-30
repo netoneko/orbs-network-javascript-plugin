@@ -17,7 +17,9 @@ type testWorkerWrapper struct {
 
 func (w *testWorkerWrapper) callMethodWithoutErrors(methodName string, args *protocol.ArgumentArray) *protocol.Argument {
 	outputArgs, outputErr := w.callMethodWithErrors(methodName, args)
-	require.NoError(w.t, outputErr)
+	if w.t != nil {
+		require.NoError(w.t, outputErr)
+	}
 
 	return outputArgs
 }
@@ -25,7 +27,9 @@ func (w *testWorkerWrapper) callMethodWithoutErrors(methodName string, args *pro
 func (w *testWorkerWrapper) callMethodWithErrors(methodName string, args *protocol.ArgumentArray) (*protocol.Argument, error) {
 	outputArgs, outputErr, err := w.worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), w.contract,
 		primitives.MethodName(methodName), args)
-	require.NoError(w.t, err)
+	if w.t != nil {
+		require.NoError(w.t, err)
+	}
 
 	return outputArgs.ArgumentsIterator().NextArguments(), outputErr
 }
