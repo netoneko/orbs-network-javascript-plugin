@@ -45,7 +45,14 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return 0
 	})
 
-	wrappedCode, err := WrapContract(code, methodName.String())
+	if err := worker.LoadModule("contract", code, func(moduleName, referrerName string) int {
+		println("resolved", moduleName, referrerName)
+		return 0
+	}); err != nil {
+		return nil, err, nil
+	}
+
+	wrappedCode, err := WrapMethodCall(methodName.String())
 	if err != nil {
 		return nil, nil, err
 	}

@@ -16,27 +16,27 @@ const BYTES_KEY = new Uint8Array([1])
 const UINT32_KEY = new Uint8Array([2])
 const STRING_KEY = new Uint8Array([3])
 
-function writeBytes(value) {
+export function writeBytes(value) {
 	State.writeBytes(BYTES_KEY, value)
 }
 
-function readBytes() {
+export function readBytes() {
 	return State.readBytes(BYTES_KEY)
 }
 
-function writeUint32(value) {
+export function writeUint32(value) {
 	State.writeUint32(UINT32_KEY, value)
 }
 
-function readUint32() {
+export function readUint32() {
 	return State.readUint32(UINT32_KEY)
 }
 
-function writeString(value) {
+export function writeString(value) {
 	State.writeString(STRING_KEY, value)
 }
 
-function readString() {
+export function readString() {
 	return State.readString(STRING_KEY)
 }
 `
@@ -68,15 +68,15 @@ const BYTES_KEY = new Uint8Array([1])
 const UINT32_KEY = new Uint8Array([2])
 const STRING_KEY = new Uint8Array([3])
 
-function readBytes() {
+export function readBytes() {
 	return State.readBytes(BYTES_KEY)
 }
 
-function readUint32() {
+export function readUint32() {
 	return State.readUint32(UINT32_KEY)
 }
 
-function readString() {
+export function readString() {
 	return State.readString(STRING_KEY)
 }
 `
@@ -103,15 +103,15 @@ func TestNewV8Worker_ClearState(t *testing.T) {
 import { State } from "orbs-contract-sdk/v1";
 const BYTES_KEY = new Uint8Array([1])
 
-function writeBytes(value) {
+export function writeBytes(value) {
 	State.writeBytes(BYTES_KEY, value)
 }
 
-function readBytes() {
+export function readBytes() {
 	return State.readBytes(BYTES_KEY)
 }
 
-function clearBytes() {
+export function clearBytes() {
 	State.clear(BYTES_KEY)
 }
 `

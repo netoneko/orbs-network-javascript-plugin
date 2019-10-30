@@ -16,7 +16,7 @@ func TestNewV8Worker_CallSDKHandlerMethod(t *testing.T) {
 
 	contract := `
 import { Address } from "orbs-contract-sdk/v1";
-function testSignerAddress(a, b, c) {
+export function testSignerAddress(a, b, c) {
 	return Address.getSignerAddress()
 }
 `

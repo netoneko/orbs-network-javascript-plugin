@@ -5,18 +5,11 @@ import (
 	"text/template"
 )
 
-func WrapContract(code string, method string) (string, error) {
+func WrapMethodCall(method string) (string, error) {
 	tmpl, err := template.New(`sdk`).Parse(`
+import * as Contract from "contract";
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
-
-/** 
-  contract code start
-**/
-{{.code}}
-/** 
-  contract code end
-**/
 
 function protoEquals(val, f) {
 	return val.__proto__.constructor == f;
@@ -62,11 +55,11 @@ V8Worker2.recv(function(msg) {
 	if (methodName === 0) {
 		let returnValue;
 		try {
-			if (typeof {{.method}} === "undefined") {
+			if (typeof Contract.{{.method}} === "undefined") {
 				throw new Error("method '{{.method}}' not found in contract");
 			}
 
-			returnValue = {{.method}}(...methodCallArguments);
+			returnValue = Contract.{{.method}}(...methodCallArguments);
 		} catch (e) {
 			returnValue = e;
 			V8Worker2.print(e);
@@ -83,11 +76,11 @@ V8Worker2.recv(function(msg) {
 	}
 
 	buf := bytes.NewBufferString("")
-	if err = tmpl.Execute(buf, getCodeSettings(code, method)); err != nil {
+	if err = tmpl.Execute(buf, map[string]interface{}{
+		"method": method,
+	}); err != nil {
 		return "", err
 	}
-
-	//println(buf.String())
 
 	return buf.String(), nil
 }
@@ -182,12 +175,5 @@ func getSDKSettings() map[string]interface{} {
 			SDK_OBJECT_STATE, SDK_METHOD_CLEAR,
 			"key", "argBytes(key)",
 		),
-	}
-}
-
-func getCodeSettings(code string, method string) map[string]interface{} {
-	return map[string]interface{}{
-		"code":   code,
-		"method": method,
 	}
 }

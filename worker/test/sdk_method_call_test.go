@@ -10,7 +10,7 @@ import (
 func TestNewV8Worker_CallMethodWithNoArguments(t *testing.T) {
 	sdkHandler := test.AFakeSdk()
 	contract := `
-function hello() {
+export function hello() {
 	return 1
 }`
 	worker := newTestWorker(t, sdkHandler, contract)
@@ -21,7 +21,7 @@ function hello() {
 func TestNewV8Worker_CallMethodWithArguments(t *testing.T) {
 	sdkHandler := test.AFakeSdk()
 	contract := `
-function hello(a, b) {
+export function hello(a, b) {
 	return 1 + a + b
 }
 `
@@ -35,7 +35,7 @@ func BenchmarkMethodCall(b *testing.B) {
 	sdkHandler := test.AFakeSdkFor(owner, owner)
 
 	contract := `
-function test(a, b) {
+export function test(a, b) {
 	return a + b
 }
 `

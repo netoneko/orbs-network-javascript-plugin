@@ -15,7 +15,7 @@ func TestNewV8Worker_MethodNotFound(t *testing.T) {
 import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
-function write(value) {
+export function write(value) {
 	State.writeString(KEY, value)
 }
 `
@@ -40,11 +40,11 @@ func TestNewV8Worker_MethodThrowsError(t *testing.T) {
 import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
-function write(value) {
+export function write(value) {
 	State.writeString(KEY, value)
 }
 
-function bang() {
+export function bang() {
 	throw new Error("bang!")
 }
 `
