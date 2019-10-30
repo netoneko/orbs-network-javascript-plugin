@@ -29,7 +29,7 @@ const (
 	SDK_METHOD_READ_STRING  = uint32(306)
 	SDK_METHOD_READ_UINT32  = uint32(307)
 	SDK_METHOD_READ_UINT64  = uint32(308)
-	SDK_METHOD_CLEAR        = uint64(309)
+	SDK_METHOD_CLEAR        = uint32(309)
 )
 
 const (
@@ -142,6 +142,8 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 			} else {
 				results = append(results, binary.LittleEndian.Uint64(value))
 			}
+		case SDK_METHOD_CLEAR:
+			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, []byte{})
 		}
 	}
 

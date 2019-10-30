@@ -10,10 +10,6 @@ func DefineSDK() (string, error) {
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
-/**
-  SDK methods start
-**/
-
 export const Address = {
 	getSignerAddress: {{.sdkMethodGetSignerAddress}},
 	getCallerAddress: {{.sdkMethodGetCallerAddress}},
@@ -31,6 +27,7 @@ export const State = {
 	readUint64: {{.sdkMethodReadUint64}},
 	writeString: {{.sdkMethodWriteString}},
 	readString: {{.sdkMethodReadString}},
+	clear: {{.sdkMethodClear}},
 }
 
 export const Events = {
@@ -53,10 +50,6 @@ export const Verify = {
 		// FIXME not implemented
 	},
 }
-
-/**
-  SDK methods end
-**/
 `)
 
 	if err != nil {

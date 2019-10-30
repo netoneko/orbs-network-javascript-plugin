@@ -22,7 +22,6 @@ function protoEquals(val, f) {
 	return val.__proto__.constructor == f;
 }
 
-// FIXME error handling
 function serializeReturnValue(val) {
 	if (typeof val === "number") {
 		return [argUint32(0), argUint32(0), argUint32(val)];
@@ -114,11 +113,11 @@ func proxyWriteOnlyMethodCall(sdkObject uint32, sdkMethod uint32, jsParams strin
 	return buf.String()
 }
 
-func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string) string {
+func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string, defaultEmptyValue string) string {
 	tmpl, err := template.New(`sdkProxyMethodCall`).Parse(`
 ({{.jsParams}}) => {
 	const response = V8Worker2.send(packedArgumentsEncode([argUint32({{.sdkObject}}), argUint32({{.sdkMethod}}), {{.jsWrappedParams}}]).buffer);
-	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0];
+	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0] || {{.defaultEmptyValue}};
 }`)
 
 	if err != nil {
@@ -127,10 +126,11 @@ func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, js
 
 	buf := bytes.NewBufferString("")
 	tmpl.Execute(buf, map[string]interface{}{
-		"sdkObject":       sdkObject,
-		"sdkMethod":       sdkMethod,
-		"jsParams":        jsParams,
-		"jsWrappedParams": jsWrappedParams,
+		"sdkObject":         sdkObject,
+		"sdkMethod":         sdkMethod,
+		"jsParams":          jsParams,
+		"jsWrappedParams":   jsWrappedParams,
+		"defaultEmptyValue": defaultEmptyValue,
 	})
 
 	return buf.String()
@@ -140,11 +140,11 @@ func getSDKSettings() map[string]interface{} {
 	return map[string]interface{}{
 		"sdkMethodGetCallerAddress": proxyReadMethodCall(
 			SDK_OBJECT_ADDRESS, SDK_METHOD_GET_CALLER_ADDRESS,
-			"", "",
+			"", "", "undefined",
 		),
 		"sdkMethodGetSignerAddress": proxyReadMethodCall(
 			SDK_OBJECT_ADDRESS, SDK_METHOD_GET_SIGNER_ADDRESS,
-			"", "",
+			"", "", "undefined",
 		),
 		"sdkMethodWriteBytes": proxyWriteOnlyMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_WRITE_BYTES,
@@ -152,7 +152,7 @@ func getSDKSettings() map[string]interface{} {
 		),
 		"sdkMethodReadBytes": proxyReadMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_READ_BYTES,
-			"key", "argBytes(key)",
+			"key", "argBytes(key)", "new Uint8Array()",
 		),
 		"sdkMethodWriteUint32": proxyWriteOnlyMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_WRITE_UINT32,
@@ -160,7 +160,7 @@ func getSDKSettings() map[string]interface{} {
 		),
 		"sdkMethodReadUint32": proxyReadMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_READ_UINT32,
-			"key", "argBytes(key)",
+			"key", "argBytes(key)", "Uint32(0)",
 		),
 		"sdkMethodWriteUint64": proxyWriteOnlyMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_WRITE_UINT64,
@@ -168,7 +168,7 @@ func getSDKSettings() map[string]interface{} {
 		),
 		"sdkMethodReadUint64": proxyReadMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_READ_UINT64,
-			"key", "argBytes(key)",
+			"key", "argBytes(key)", "Uint64(0)",
 		),
 		"sdkMethodWriteString": proxyWriteOnlyMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_WRITE_STRING,
@@ -176,6 +176,10 @@ func getSDKSettings() map[string]interface{} {
 		),
 		"sdkMethodReadString": proxyReadMethodCall(
 			SDK_OBJECT_STATE, SDK_METHOD_READ_STRING,
+			"key", "argBytes(key)", `""`,
+		),
+		"sdkMethodClear": proxyWriteOnlyMethodCall(
+			SDK_OBJECT_STATE, SDK_METHOD_CLEAR,
 			"key", "argBytes(key)",
 		),
 	}
