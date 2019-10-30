@@ -2,37 +2,95 @@ package worker
 
 import (
 	"bytes"
-	"github.com/orbs-network/orbs-contract-sdk/go/context"
-	"github.com/orbs-network/orbs-spec/types/go/protocol"
-	"github.com/pkg/errors"
-	"github.com/ry/v8worker2"
 	"text/template"
 )
 
-const SDK_RETURN_FROM_METHOD = 0
-const SDK_RETURN_VALUE = 0
-const SDK_RETURN_ERROR = 1
+func WrapContract(code string, method string) (string, error) {
+	tmpl, err := template.New(`sdk`).Parse(`
+import { Arguments } from "arguments";
+const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
-const SDK_GENERIC_EXECUTION_ERROR = "JS contract execution failed"
+/** 
+  contract code start
+**/
+{{.code}}
+/** 
+  contract code end
+**/
 
-func sdkDispatchCallback(dispatcher SDKMethodDispatcher, value chan executionResult, ctx context.ContextId, scope context.PermissionScope) v8worker2.ReceiveMessageCallback {
-	return func(msg []byte) []byte {
-		argArray := protocol.ArgumentArrayReader(msg)
+function protoEquals(val, f) {
+	return val.__proto__.constructor == f;
+}
 
-		i := argArray.ArgumentsIterator()
-		methodName := i.NextArguments().Uint32Value()
-		requestId := i.NextArguments().Uint32Value()
+// FIXME error handling
+function serializeReturnValue(val) {
+	if (typeof val === "number") {
+		return [argUint32(0), argUint32(0), argUint32(val)];
+	}
 
-		if methodName == SDK_RETURN_FROM_METHOD && requestId == SDK_RETURN_VALUE {
-			value <- executionResult{nil, ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()}
-		} else if methodName == SDK_RETURN_FROM_METHOD && requestId == SDK_RETURN_ERROR {
-			value <- executionResult{errors.New(SDK_GENERIC_EXECUTION_ERROR), ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()}
-		} else {
-			return dispatcher.Dispatch(ctx, scope, argArray).Raw()
+	if (typeof val === "string") {
+		return [argUint32(0), argUint32(0), argString(val)];
+	}
+
+	if (typeof val === "object") {
+		if (protoEquals(val, Uint8Array)) {
+			return [argUint32(0), argUint32(0), argBytes(val)];
 		}
 
-		return nil
+		if (protoEquals(val, Error)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
+		}
+
+		if (protoEquals(val, ReferenceError)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
+		}
+
+		if (protoEquals(val, TypeError)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
+		}
 	}
+
+	if (typeof val === "undefined") {
+		return [argUint32(0), argUint32(0)];
+	}
+
+	throw new Error("unsupported return value");
+}
+
+V8Worker2.recv(function(msg) {
+	const [ methodName, requestId, ...methodCallArguments ] = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
+
+	if (methodName === 0) {
+		let returnValue;
+		try {
+			if (typeof {{.method}} === "undefined") {
+				throw new Error("method '{{.method}}' not found in contract");
+			}
+
+			returnValue = {{.method}}(...methodCallArguments);
+		} catch (e) {
+			returnValue = e;
+			V8Worker2.print(e);
+		}
+
+		const payload = packedArgumentsEncode(serializeReturnValue(returnValue));
+		V8Worker2.send(payload.buffer);
+	}
+});
+`)
+
+	if err != nil {
+		return "", err
+	}
+
+	buf := bytes.NewBufferString("")
+	if err = tmpl.Execute(buf, getCodeSettings(code, method)); err != nil {
+		return "", err
+	}
+
+	//println(buf.String())
+
+	return buf.String(), nil
 }
 
 func proxyWriteOnlyMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string) string {
@@ -120,5 +178,12 @@ func getSDKSettings() map[string]interface{} {
 			SDK_OBJECT_STATE, SDK_METHOD_READ_STRING,
 			"key", "argBytes(key)",
 		),
+	}
+}
+
+func getCodeSettings(code string, method string) map[string]interface{} {
+	return map[string]interface{}{
+		"code":   code,
+		"method": method,
 	}
 }

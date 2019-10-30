@@ -25,7 +25,7 @@ type Worker interface {
 
 func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error) {
 	value := make(chan executionResult, 1) // need a buffered channel for return value
-	callback := sdkDispatchCallback(NewMethodDispatcher(w.sdkHandler), value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
+	callback := NewMethodDispatcher(w.sdkHandler).GetCallback(value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
 	worker := v8worker2.New(callback)
 
 	worker.LoadModule("arguments",

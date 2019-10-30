@@ -1,7 +1,8 @@
-package worker
+package test
 
 import (
 	"github.com/orbs-network/orbs-network-javascript-plugin/test"
+	. "github.com/orbs-network/orbs-network-javascript-plugin/worker"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -48,15 +49,10 @@ function bang() {
 }
 `
 
-	worker := NewV8Worker(sdkHandler)
-	_, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
-		"write", ArgsToArgumentArray("Diamond Dogs"))
-	require.NoError(t, err)
-	require.NoError(t, outputErr)
+	worker := newTestWorker(t, sdkHandler, contract)
+	worker.callMethodWithoutErrors("write", ArgsToArgumentArray("Diamond Dogs"))
 
-	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
-		"bang", ArgsToArgumentArray())
-	require.NoError(t, err)
+	outputValue, outputErr := worker.callMethodWithErrors("bang", ArgsToArgumentArray())
 	require.EqualError(t, outputErr, "JS contract execution failed")
-	require.EqualValues(t, "bang!", outputArgs.ArgumentsIterator().NextArguments().StringValue())
+	require.EqualValues(t, "bang!", outputValue.StringValue())
 }
