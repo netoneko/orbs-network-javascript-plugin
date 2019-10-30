@@ -65,9 +65,9 @@ func TestNewV8Worker_CallSDKHandlerMethod(t *testing.T) {
 
 	worker := NewV8Worker(sdkHandler)
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), `
-//import { Address } from "orbs-contract-sdk/v1";
+import { Address } from "orbs-contract-sdk/v1";
 function testSignerAddress(a, b, c) {
-	const address = Address.GetSignerAddress()
+	const address = Address.getSignerAddress()
 	return address 
 }
 `, "testSignerAddress", ArgsToArgumentArray(uint32(1), uint32(2), uint32(3)))
@@ -83,16 +83,16 @@ func TestNewV8Worker_ManipulateStateWithBytes(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
-//import { State } from "orbs-contract-sdk/v1";
+import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3, 4, 5])
 
 function write(value) {
-	State.WriteBytes(KEY, value)
+	State.writeBytes(KEY, value)
 	return 0
 }
 
 function read() {
-	return State.ReadBytes(KEY)
+	return State.readBytes(KEY)
 }
 `
 
@@ -115,16 +115,16 @@ func TestNewV8Worker_ManipulateStateWithUint32(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
-//import { State } from "orbs-contract-sdk/v1";
+import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
 function write(value) {
-	State.WriteUint32(KEY, value)
+	State.writeUint32(KEY, value)
 	return 0
 }
 
 function read() {
-	return State.ReadUint32(KEY)
+	return State.readUint32(KEY)
 }
 `
 
@@ -147,16 +147,16 @@ func TestNewV8Worker_ManipulateStateWithString(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
 	contract := `
-//import { State } from "orbs-contract-sdk/v1";
+import { State } from "orbs-contract-sdk/v1";
 const KEY = new Uint8Array([1, 2, 3])
 
 function write(value) {
-	State.WriteString(KEY, value)
+	State.writeString(KEY, value)
 	return 0
 }
 
 function read() {
-	return State.ReadString(KEY)
+	return State.readString(KEY)
 }
 `
 

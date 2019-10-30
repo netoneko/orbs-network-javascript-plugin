@@ -11,7 +11,7 @@ import (
 func TestBenchmarkToken(t *testing.T) {
 	sdkHandler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 
-	contract, _ := ioutil.ReadFile("../contracts/benchmark/token.js")
+	contract, _ := ioutil.ReadFile("../contracts/benchmark/token-in-progress.js")
 
 	worker := NewV8Worker(sdkHandler)
 	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), string(contract),
