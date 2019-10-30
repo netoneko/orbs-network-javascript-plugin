@@ -2,8 +2,38 @@ package worker
 
 import (
 	"bytes"
+	"github.com/orbs-network/orbs-contract-sdk/go/context"
+	"github.com/orbs-network/orbs-spec/types/go/protocol"
+	"github.com/pkg/errors"
+	"github.com/ry/v8worker2"
 	"text/template"
 )
+
+const SDK_RETURN_FROM_METHOD = 0
+const SDK_RETURN_VALUE = 0
+const SDK_RETURN_ERROR = 1
+
+const SDK_GENERIC_EXECUTION_ERROR = "JS contract execution failed"
+
+func sdkDispatchCallback(dispatcher SDKMethodDispatcher, value chan executionResult, ctx context.ContextId, scope context.PermissionScope) v8worker2.ReceiveMessageCallback {
+	return func(msg []byte) []byte {
+		argArray := protocol.ArgumentArrayReader(msg)
+
+		i := argArray.ArgumentsIterator()
+		methodName := i.NextArguments().Uint32Value()
+		requestId := i.NextArguments().Uint32Value()
+
+		if methodName == SDK_RETURN_FROM_METHOD && requestId == SDK_RETURN_VALUE {
+			value <- executionResult{nil, ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()}
+		} else if methodName == SDK_RETURN_FROM_METHOD && requestId == SDK_RETURN_ERROR {
+			value <- executionResult{errors.New(SDK_GENERIC_EXECUTION_ERROR), ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()}
+		} else {
+			return dispatcher.Dispatch(ctx, scope, argArray).Raw()
+		}
+
+		return nil
+	}
+}
 
 func proxyWriteOnlyMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, jsWrappedParams string) string {
 	tmpl, err := template.New(`sdkProxyMethodCall`).Parse(`

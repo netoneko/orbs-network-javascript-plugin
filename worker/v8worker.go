@@ -14,22 +14,9 @@ type wrapper struct {
 	sdkHandler context.SdkHandler
 }
 
-func buildCallback(dispatcher SDKMethodDispatcher, value chan interface{}, ctx context.ContextId, scope context.PermissionScope) v8worker2.ReceiveMessageCallback {
-	return func(msg []byte) []byte {
-		argArray := protocol.ArgumentArrayReader(msg)
-
-		i := argArray.ArgumentsIterator()
-		methodName := i.NextArguments().Uint32Value()
-		requestId := i.NextArguments().Uint32Value()
-
-		if methodName == 0 && requestId == 0 {
-			value <- ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()
-		} else {
-			return dispatcher.Dispatch(ctx, scope, argArray).Raw()
-		}
-
-		return nil
-	}
+type executionResult struct {
+	err   error
+	value []byte
 }
 
 type Worker interface {
@@ -37,8 +24,8 @@ type Worker interface {
 }
 
 func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionContextId, code string, methodName primitives.MethodName, args *protocol.ArgumentArray) (contractOutputArgs *protocol.ArgumentArray, contractOutputErr error, err error) {
-	value := make(chan interface{}, 1) // need a buffered channel for return value
-	callback := buildCallback(NewMethodDispatcher(w.sdkHandler), value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
+	value := make(chan executionResult, 1) // need a buffered channel for return value
+	callback := sdkDispatchCallback(NewMethodDispatcher(w.sdkHandler), value, context.ContextId(executionContextId), context.PERMISSION_SCOPE_SERVICE)
 	worker := v8worker2.New(callback)
 
 	worker.LoadModule("arguments",
@@ -73,11 +60,9 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		return nil, err, nil
 	}
 
-	val := (<-value).([]byte)
-	valCopy := make([]byte, len(val))
-	copy(valCopy, val)
+	val := <-value
 	worker.TerminateExecution()
-	return protocol.ArgumentArrayReader(val), nil, err
+	return protocol.ArgumentArrayReader(val.value), val.err, err
 }
 
 func NewV8Worker(sdkHandler context.SdkHandler) Worker {

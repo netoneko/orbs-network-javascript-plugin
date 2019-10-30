@@ -18,6 +18,10 @@ const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEn
   contract code end
 **/
 
+function protoEquals(val, f) {
+	return val.__proto__.constructor == f;
+}
+
 // FIXME error handling
 function serializeReturnValue(val) {
 	if (typeof val === "number") {
@@ -29,9 +33,20 @@ function serializeReturnValue(val) {
 	}
 
 	if (typeof val === "object") {
-		const protoName = val.__proto__.constructor.name;
-		if (protoName === "Uint8Array") {
+		if (protoEquals(val, Uint8Array)) {
 			return [argUint32(0), argUint32(0), argBytes(val)];
+		}
+
+		if (protoEquals(val, Error)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
+		}
+
+		if (protoEquals(val, ReferenceError)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
+		}
+
+		if (protoEquals(val, TypeError)) {
+			return [argUint32(0), argUint32(1), argString(val.message)];
 		}
 	}
 
@@ -46,9 +61,18 @@ V8Worker2.recv(function(msg) {
 	const [ methodName, requestId, ...methodCallArguments ] = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
 
 	if (methodName === 0) {
-		// FIXME error handling
-		const val = {{.method}}(...methodCallArguments);
-		const payload = packedArgumentsEncode(serializeReturnValue(val));
+		let returnValue;
+		try {
+			if (typeof {{.method}} === "undefined") {
+				throw new Error("method '{{.method}}' not found in contract");
+			}
+
+			returnValue = {{.method}}(...methodCallArguments);
+		} catch (e) {
+			returnValue = e;			
+		}
+
+		const payload = packedArgumentsEncode(serializeReturnValue(returnValue));
 		V8Worker2.send(payload.buffer);
 	}
 });
