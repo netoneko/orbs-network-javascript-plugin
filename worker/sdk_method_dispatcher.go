@@ -152,13 +152,10 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 	case SDK_OBJECT_EVENTS:
 		switch method {
 		case SDK_METHOD_EMIT_EVENT:
-			eventName := iterator.NextArguments().String()
-			var eventParams []interface{}
-			for iterator.HasNext() {
-				eventParams = append(eventParams, iterator.NextArguments().StringValue())
-			}
+			eventName := iterator.NextArguments().StringValue()
+			eventParams := ArgumentArrayToArgs(args)[3:]
 			// FIXME add a dispatch call
-			println(fmt.Sprintf("%v", eventName, eventParams))
+			println(fmt.Sprintf("Emitted %s%v", eventName, eventParams))
 		}
 	}
 

@@ -22,6 +22,24 @@ func ArgsToArgumentArray(args ...interface{}) *protocol.ArgumentArray {
 	return (&protocol.ArgumentArrayBuilder{Arguments: res}).Build()
 }
 
+func ArgumentArrayToArgs(ArgumentArray *protocol.ArgumentArray) []interface{} {
+	res := []interface{}{}
+	for i := ArgumentArray.ArgumentsIterator(); i.HasNext(); {
+		Argument := i.NextArguments()
+		switch Argument.Type() {
+		case protocol.ARGUMENT_TYPE_UINT_32_VALUE:
+			res = append(res, Argument.Uint32Value())
+		case protocol.ARGUMENT_TYPE_UINT_64_VALUE:
+			res = append(res, Argument.Uint64Value())
+		case protocol.ARGUMENT_TYPE_STRING_VALUE:
+			res = append(res, Argument.StringValue())
+		case protocol.ARGUMENT_TYPE_BYTES_VALUE:
+			res = append(res, Argument.BytesValue())
+		}
+	}
+	return res
+}
+
 func TypedArgs(messageType uint32, id uint32, args *protocol.ArgumentArray) *protocol.ArgumentArray {
 	res := []*protocol.ArgumentBuilder{
 		{

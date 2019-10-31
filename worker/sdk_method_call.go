@@ -10,6 +10,7 @@ func WrapMethodCall(method string) (string, error) {
 import * as Contract from "contract";
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
+//import { Types } from "orbs-client-sdk/v1";
 
 function protoEquals(val, f) {
 	return val.__proto__.constructor == f;
