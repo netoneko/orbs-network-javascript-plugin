@@ -12,11 +12,23 @@ import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
 
 function protoEquals(val, f) {
-	return val.__proto__.constructor == f;
+	return val.__proto__.constructor === f;
 }
 
 function isUint8Array(val) {
-	return protoEquals(val, Uint8Array)
+	return protoEquals(val, Uint8Array);
+}
+
+function isString(val) {
+	return typeof val === "string";
+}
+
+function isNumber(val) {
+	return typeof val === "number";
+}
+
+function isBigInt(val) {
+	return typeof val === "bigint";
 }
 
 function isError(val) {
@@ -48,7 +60,13 @@ export const Types = {
 	protoEquals,
 	isError,
 	isUint8Array,
-	toArgument
+	isString,
+	isNumber,
+	isBigInt,
+	toArgument,
+
+	UINT32_MAX_VALUE: 0xFFFFFFFF,
+	UINT64_MAX_VALUE: 0xFFFFFFFFFFFFFFFFn,
 }
 
 export const Address = {
@@ -86,14 +104,25 @@ export const Uint64 = BigInt;
 export const Uint32 = Number;
 
 export const Verify = {
-	bytes: () => {
-		// FIXME not implemented
+	bytes: (val) => {
+		if (!Types.isUint8Array(val)) {
+			throw new Error('Value "' + val + '" is not a byte array');
+		}
 	},
-	uint32: () => {
-		// FIXME not implemented
+	string: (val) => {
+		if (!Types.isString(val)) {
+			throw new Error('Value "' + val + '" is not a string');
+		}
 	},
-	uint64: () => {
-		// FIXME not implemented
+	uint32: (val) => {
+		if (!(Types.isNumber(val) && val <= Types.UINT32_MAX_VALUE)) {
+			throw new Error('Value "' + val + '" is not a uint32');
+		}
+	},
+	uint64: (val) => {
+		if (!(Types.isBigInt(val) && val <= Types.UINT64_MAX_VALUE)) {
+			throw new Error('Value "' + val + '" is not a uint64');
+		}
 	},
 }
 `)
