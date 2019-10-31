@@ -32,8 +32,11 @@ export const State = {
 }
 
 export const Events = {
-	emitEvent: () => {
-		// FIXME not implemented
+	emitEvent: (validator, ...events) => {
+		validator(...events);
+		const name = validator.name;
+
+		V8Worker2.send(packedArgumentsEncode([argUint32(400), argUint32(401), argString(name)]).buffer);
 	}
 }
 
@@ -61,8 +64,6 @@ export const Verify = {
 	if err = tmpl.Execute(buf, getSDKSettings()); err != nil {
 		panic(fmt.Sprintf("failed to generate SDK bindings: %s", err))
 	}
-
-	//println(buf.String())
 
 	return buf.String()
 }

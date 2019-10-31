@@ -44,6 +44,7 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 		println("resolved", moduleName, referrerName)
 		return 0
 	})
+	//println(SDK_CODE)
 
 	if err := worker.LoadModule("contract", code, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)

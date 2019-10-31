@@ -27,6 +27,7 @@ func TestBenchmarkToken(t *testing.T) {
 	require.EqualValues(t, totalSupply, totalSupplyValue.Uint64Value())
 
 	// transfer
+	//sdkHandler.MockEmitEvent(func(from []byte, to []byte, amount uint64) {}, owner, receiver, amount)
 	worker.callMethodWithoutErrors("transfer", ArgsToArgumentArray(amount, receiver))
 
 	// receiver balance
@@ -36,4 +37,6 @@ func TestBenchmarkToken(t *testing.T) {
 	// owner balance
 	ownerBalance := worker.callMethodWithoutErrors("balanceOf", ArgsToArgumentArray(owner))
 	require.EqualValues(t, totalSupply-amount, ownerBalance.Uint64Value())
+
+	//sdkHandler.VerifyMocks()
 }
