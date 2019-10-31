@@ -46,7 +46,11 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	})
 	//println(SDK_CODE)
 
-	if err := worker.LoadModule("contract", code, func(moduleName, referrerName string) int {
+	sanitizedCode, err := SanitizeCode(code)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := worker.LoadModule("contract", sanitizedCode, func(moduleName, referrerName string) int {
 		println("resolved", moduleName, referrerName)
 		return 0
 	}); err != nil {
@@ -65,7 +69,7 @@ func (w *wrapper) ProcessMethodCall(executionContextId primitives.ExecutionConte
 	}
 
 	// Could be replaced with a call to get arguments and method name
-	if err := worker.SendBytes(TypedArgs(uint32(0), uint32(0), args).Raw()); err != nil {
+	if err := worker.SendBytes(args.Raw()); err != nil {
 		fmt.Println("err!", err)
 		return nil, err, nil
 	}

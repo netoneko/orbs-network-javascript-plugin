@@ -25,24 +25,22 @@ function serializeReturnValue(val) {
 }
 
 V8Worker2.recv(function(msg) {
-	const [ methodName, requestId, ...methodCallArguments ] = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
+	const methodCallArguments = packedArgumentsDecode(new Uint8Array(msg)).map(a => a.value);
 
-	if (methodName === 0) {
-		let returnValue;
-		try {
-			if (typeof Contract.{{.method}} === "undefined") {
-				throw new Error("method '{{.method}}' not found in contract");
-			}
-
-			returnValue = Contract.{{.method}}(...methodCallArguments);
-		} catch (e) {
-			returnValue = e;
-			V8Worker2.print(e);
+	let returnValue;
+	try {
+		if (typeof Contract.{{.method}} === "undefined") {
+			throw new Error("method '{{.method}}' not found in contract");
 		}
 
-		const payload = packedArgumentsEncode(serializeReturnValue(returnValue));
-		V8Worker2.send(payload.buffer);
+		returnValue = Contract.{{.method}}(...methodCallArguments);
+	} catch (e) {
+		returnValue = e;
+		V8Worker2.print(e);
 	}
+
+	const payload = packedArgumentsEncode(serializeReturnValue(returnValue));
+	V8Worker2.send(payload.buffer);
 });
 `)
 
