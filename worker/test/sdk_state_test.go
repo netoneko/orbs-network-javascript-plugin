@@ -32,6 +32,14 @@ export function readUint32() {
 	return State.readUint32(UINT32_KEY)
 }
 
+export function writeUint64(value) {
+	State.writeUint64(UINT32_KEY, value)
+}
+
+export function readUint64() {
+	return State.readUint64(UINT32_KEY)
+}
+
 export function writeString(value) {
 	State.writeString(STRING_KEY, value)
 }
@@ -52,6 +60,11 @@ export function readString() {
 	uint32Value := worker.callMethodWithoutErrors("readUint32", ArgsToArgumentArray())
 	require.EqualValues(t, uint32(123456), uint32Value.Uint32Value())
 
+	// uint64
+	worker.callMethodWithoutErrors("writeUint64", ArgsToArgumentArray(uint64(1234567890123)))
+	uint64Value := worker.callMethodWithoutErrors("readUint64", ArgsToArgumentArray())
+	require.EqualValues(t, uint64(1234567890123), uint64Value.Uint64Value())
+
 	// string
 	worker.callMethodWithoutErrors("writeString", ArgsToArgumentArray("Diamond Dogs"))
 	stringValue := worker.callMethodWithoutErrors("readString", ArgsToArgumentArray())
@@ -64,20 +77,22 @@ func TestNewV8Worker_ReadDefaultValuesFromState(t *testing.T) {
 
 	contract := `
 import { State } from "orbs-contract-sdk/v1";
-const BYTES_KEY = new Uint8Array([1])
-const UINT32_KEY = new Uint8Array([2])
-const STRING_KEY = new Uint8Array([3])
+const KEY = new Uint8Array([1])
 
 export function readBytes() {
-	return State.readBytes(BYTES_KEY)
+	return State.readBytes(KEY)
 }
 
 export function readUint32() {
-	return State.readUint32(UINT32_KEY)
+	return State.readUint32(KEY)
+}
+
+export function readUint64() {
+	return State.readUint64(KEY)
 }
 
 export function readString() {
-	return State.readString(STRING_KEY)
+	return State.readString(KEY)
 }
 `
 	worker := newTestWorker(t, sdkHandler, contract)
@@ -89,6 +104,10 @@ export function readString() {
 	// uint32
 	uint32Value := worker.callMethodWithoutErrors("readUint32", ArgsToArgumentArray())
 	require.EqualValues(t, uint32(0), uint32Value.Uint32Value())
+
+	// uint64
+	uint64Value := worker.callMethodWithoutErrors("readUint64", ArgsToArgumentArray())
+	require.EqualValues(t, uint64(0), uint64Value.Uint64Value())
 
 	// string
 	stringValue := worker.callMethodWithoutErrors("readString", ArgsToArgumentArray())

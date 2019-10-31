@@ -37,7 +37,7 @@ export const Events = {
 	}
 }
 
-export const Uint64 = Number; // FIXME later
+export const Uint64 = BigInt;
 export const Uint32 = Number;
 
 export const Verify = {

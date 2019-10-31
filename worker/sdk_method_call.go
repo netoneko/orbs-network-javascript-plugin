@@ -20,6 +20,10 @@ function serializeReturnValue(val) {
 		return [argUint32(0), argUint32(0), argUint32(val)];
 	}
 
+	if (typeof val === "bigint") {
+		return [argUint32(0), argUint32(0), argUint64(val)];
+	}
+
 	if (typeof val === "string") {
 		return [argUint32(0), argUint32(0), argString(val)];
 	}
