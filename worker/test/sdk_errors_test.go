@@ -3,7 +3,6 @@ package test
 import (
 	"github.com/orbs-network/orbs-network-javascript-plugin/test"
 	. "github.com/orbs-network/orbs-network-javascript-plugin/worker"
-	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -20,17 +19,12 @@ export function write(value) {
 }
 `
 
-	worker := NewV8Worker(sdkHandler)
-	_, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
-		"write", ArgsToArgumentArray("Diamond Dogs"))
-	require.NoError(t, err)
-	require.NoError(t, outputErr)
+	worker := newTestWorker(t, sdkHandler, contract)
+	worker.callMethodWithoutErrors("write", ArgsToArgumentArray("Diamond Dogs"))
 
-	outputArgs, outputErr, err := worker.ProcessMethodCall(primitives.ExecutionContextId("myScript"), contract,
-		"_read", ArgsToArgumentArray())
-	require.NoError(t, err)
+	outputValue, outputErr := worker.callMethodWithErrors("_read", ArgsToArgumentArray())
 	require.EqualError(t, outputErr, "JS contract execution failed")
-	require.EqualValues(t, "method '_read' not found in contract", outputArgs.ArgumentsIterator().NextArguments().StringValue())
+	require.EqualValues(t, "method '_read' not found in contract", outputValue.StringValue())
 }
 
 func TestNewV8Worker_MethodThrowsError(t *testing.T) {

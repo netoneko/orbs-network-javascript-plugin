@@ -30,6 +30,7 @@ func (w *testWorkerWrapper) callMethodWithErrors(methodName string, args *protoc
 	if w.t != nil {
 		require.NoError(w.t, err)
 	}
+	//println(outputErr.Error())
 
 	return outputArgs.ArgumentsIterator().NextArguments(), outputErr
 }
