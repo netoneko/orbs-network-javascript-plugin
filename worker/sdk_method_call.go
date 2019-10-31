@@ -10,43 +10,18 @@ func WrapMethodCall(method string) (string, error) {
 import * as Contract from "contract";
 import { Arguments } from "arguments";
 const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
-
-function protoEquals(val, f) {
-	return val.__proto__.constructor == f;
-}
+import { Types } from "orbs-contract-sdk/v1";
 
 function serializeReturnValue(val) {
-	if (typeof val === "number") {
-		return [argUint32(0), argUint32(0), argUint32(val)];
-	}
-
-	if (typeof val === "string") {
-		return [argUint32(0), argUint32(0), argString(val)];
-	}
-
-	if (typeof val === "object") {
-		if (protoEquals(val, Uint8Array)) {
-			return [argUint32(0), argUint32(0), argBytes(val)];
-		}
-
-		if (protoEquals(val, Error)) {
-			return [argUint32(0), argUint32(1), argString(val.message)];
-		}
-
-		if (protoEquals(val, ReferenceError)) {
-			return [argUint32(0), argUint32(1), argString(val.message)];
-		}
-
-		if (protoEquals(val, TypeError)) {
-			return [argUint32(0), argUint32(1), argString(val.message)];
-		}
-	}
-
 	if (typeof val === "undefined") {
 		return [argUint32(0), argUint32(0)];
 	}
 
-	throw new Error("unsupported return value");
+	if (Types.isError(val)) {
+		return [argUint32(0), argUint32(1), Types.toArgument(val)];
+	}
+
+	return [argUint32(0), argUint32(0), Types.toArgument(val)];
 }
 
 V8Worker2.recv(function(msg) {

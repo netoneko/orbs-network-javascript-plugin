@@ -40,7 +40,7 @@ export function transfer(amount, targetAddress) {
 }
 
 export function balanceOf(targetAddress) {
-    Verify.Bytes(targetAddress);
+    Verify.bytes(targetAddress);
     Address.validateAddress(targetAddress);
     return State.readUint64(targetAddress);
 }

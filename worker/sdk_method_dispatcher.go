@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/pkg/errors"
@@ -30,6 +31,9 @@ const (
 	SDK_METHOD_READ_UINT32  = uint32(307)
 	SDK_METHOD_READ_UINT64  = uint32(308)
 	SDK_METHOD_CLEAR        = uint32(309)
+
+	SDK_OBJECT_EVENTS     = uint32(400)
+	SDK_METHOD_EMIT_EVENT = uint32(401)
 )
 
 const (
@@ -144,6 +148,14 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 			}
 		case SDK_METHOD_CLEAR:
 			dispatcher.handler.SdkStateWriteBytes(ctx, permissionScope, key, []byte{})
+		}
+	case SDK_OBJECT_EVENTS:
+		switch method {
+		case SDK_METHOD_EMIT_EVENT:
+			eventName := iterator.NextArguments().StringValue()
+			eventParams := ArgumentArrayToArgs(args)[3:]
+			// FIXME add a dispatch call
+			println(fmt.Sprintf("Emitted %s%v", eventName, eventParams))
 		}
 	}
 
