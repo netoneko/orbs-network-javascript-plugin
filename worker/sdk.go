@@ -19,7 +19,7 @@ function isUint8Array(val) {
 	return protoEquals(val, Uint8Array)
 }
 
-function isError() {
+function isError(val) {
 	return protoEquals(val, Error) || protoEquals(val, ReferenceError) || protoEquals(val, TypeError);
 }
 
