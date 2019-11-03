@@ -2,10 +2,10 @@ package test
 
 import (
 	"fmt"
+	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-network-go/services/processor"
 	"github.com/orbs-network/orbs-network-javascript-plugin/pack"
 	"github.com/orbs-network/orbs-network-javascript-plugin/worker"
-	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
 	"os/exec"
@@ -36,15 +36,16 @@ func Test_V8Worker(t *testing.T) {
 	v8Worker := constructor(fakeSDK)
 
 	contract := `
+import { State } from "orbs-contract-sdk/v1"
 const KEY = new Uint8Array([1, 2, 3, 4, 5])
 
-function write(value) {
-	State.WriteBytes(KEY, value)
+export function write(value) {
+	State.writeBytes(KEY, value)
 	return 0
 }
 
-function read() {
-	return State.ReadBytes(KEY)
+export function read() {
+	return State.readBytes(KEY)
 }
 `
 
