@@ -9,7 +9,10 @@ import (
 func DefineSDK() string {
 	tmpl, err := template.New(`sdk`).Parse(`
 import { Arguments } from "arguments";
-const { argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode } = Arguments.Orbs;
+const { 
+	argUint32, argUint64, argString, argBytes, argAddress, packedArgumentsEncode, packedArgumentsDecode,
+	hexToBytes, bytesToHex, stringToBytes, bytesToString,
+} = Arguments.Orbs;
 
 function protoEquals(val, f) {
 	return val.__proto__.constructor === f;
@@ -64,6 +67,8 @@ export const Types = {
 	isNumber,
 	isBigInt,
 	toArgument,
+
+	hexToBytes, bytesToHex, stringToBytes, bytesToString,
 
 	UINT32_MAX_VALUE: 0xFFFFFFFF,
 	UINT64_MAX_VALUE: 0xFFFFFFFFFFFFFFFFn,
