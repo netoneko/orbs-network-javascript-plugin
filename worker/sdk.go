@@ -100,6 +100,20 @@ export const Events = {
 	}
 }
 
+export const Service = {
+	callMethod: (serviceName, methodName, ...params) => {
+		const serializedParams = (params || []).map(toArgument);
+		const response = V8Worker2.send(packedArgumentsEncode([
+			argUint32(500), argUint32(501), argString(serviceName), argString(methodName), ...serializedParams
+		]).buffer);
+		const decodedValues = packedArgumentsDecode(new Uint8Array(response)).map(a => a.value);
+		if (decodedValues.length === 1) {
+			return decodedValues[0];
+		}
+		return decodedValues;
+	}
+}
+
 export const Uint64 = BigInt;
 export const Uint32 = Number;
 
