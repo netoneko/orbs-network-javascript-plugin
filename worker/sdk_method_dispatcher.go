@@ -34,6 +34,9 @@ const (
 
 	SDK_OBJECT_EVENTS     = uint32(400)
 	SDK_METHOD_EMIT_EVENT = uint32(401)
+
+	SDK_OBJECT_SERVICE     = uint32(500)
+	SDK_METHOD_CALL_METHOD = uint32(501)
 )
 
 const (
@@ -156,6 +159,15 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 			eventParams := ArgumentArrayToArgs(args)[3:]
 			// FIXME add a dispatch call
 			println(fmt.Sprintf("Emitted %s%v", eventName, eventParams))
+		}
+	case SDK_OBJECT_SERVICE:
+		switch method {
+		case SDK_METHOD_CALL_METHOD:
+			serviceName := iterator.NextArguments().StringValue()
+			methodName := iterator.NextArguments().StringValue()
+			arguments := ArgumentArrayToArgs(args)[4:]
+
+			results = dispatcher.handler.SdkServiceCallMethod(ctx, permissionScope, serviceName, methodName, arguments...)
 		}
 	}
 

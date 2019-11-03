@@ -30,6 +30,27 @@ export function hello(a, b) {
 	require.EqualValues(t, 6, uint32Value.Uint32Value())
 }
 
+func TestNewV8Worker_CallServiceMethodWithArguments(t *testing.T) {
+	sdkHandler := test.AFakeSdk()
+	contract := `
+import { Service, Uint64 } from "orbs-contract-sdk/v1"
+
+export function hello() {
+	return Service.callMethod("NicolasCage", "reciteAlphabet", Uint64(1), "a")
+}
+`
+	worker := newTestWorker(t, sdkHandler, contract)
+
+	sdkHandler.MockServiceCallMethod("NicolasCage", "reciteAlphabet", []interface{}{
+		"a, b, c, d, e, f, g",
+	}, uint64(1), "a")
+
+	stringValue := worker.callMethodWithoutErrors("hello", ArgsToArgumentArray())
+	require.EqualValues(t, "a, b, c, d, e, f, g", stringValue.StringValue())
+
+	sdkHandler.VerifyMocks()
+}
+
 func BenchmarkMethodCall(b *testing.B) {
 	owner := []byte("owner")
 	sdkHandler := test.AFakeSdkFor(owner, owner)
