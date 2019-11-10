@@ -97,7 +97,13 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(error)
+			switch r.(type) {
+			case error:
+				err = r.(error)
+			case string:
+				err = errors.New(r.(string))
+			}
+
 			value = ArgsToArgumentArray(err.Error())
 		}
 	}()
