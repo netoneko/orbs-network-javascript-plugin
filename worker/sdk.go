@@ -77,8 +77,13 @@ export const Types = {
 export const Address = {
 	getSignerAddress: {{.sdkMethodGetSignerAddress}},
 	getCallerAddress: {{.sdkMethodGetCallerAddress}},
+	getOwnAddress: () => {
+		// FIXME address validation is not part of the SDK handler
+		throw new Error("not implemented");
+	},
 	validateAddress: () => {
     	// FIXME address validation is not part of the SDK handler
+		throw new Error("not implemented");
 	}
 }
 
