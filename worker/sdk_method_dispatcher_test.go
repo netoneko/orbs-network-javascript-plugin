@@ -11,15 +11,17 @@ func TestMethodDispatcher(t *testing.T) {
 	handler := test.AFakeSdkFor([]byte("signer"), []byte("caller"))
 	dispatcher := NewMethodDispatcher(handler)
 
-	packedSignerAddress := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
+	packedSignerAddress, err := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
 		ArgsToArgumentArray(SDK_OBJECT_ADDRESS, SDK_METHOD_GET_SIGNER_ADDRESS))
+	require.NoError(t, err)
 	signerAddress := packedSignerAddress.ArgumentsIterator().NextArguments().BytesValue()
 	require.EqualValues(t, []byte("signer"), signerAddress)
 
 	handler.MockEnvBlockHeight(1221)
 
-	packedBlockHeight := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
+	packedBlockHeight, err := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
 		ArgsToArgumentArray(SDK_OBJECT_ENV, SDK_METHOD_GET_BLOCK_HEIGHT))
+	require.NoError(t, err)
 	blockHeight := packedBlockHeight.ArgumentsIterator().NextArguments().Uint64Value()
 	require.EqualValues(t, 1221, blockHeight)
 }
@@ -31,8 +33,9 @@ func TestMethodDispatcherWithState(t *testing.T) {
 	dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
 		ArgsToArgumentArray(SDK_OBJECT_STATE, SDK_METHOD_WRITE_BYTES, []byte("album"), []byte("Diamond Dogs")))
 
-	packedStateValue := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
+	packedStateValue, err := dispatcher.Dispatch(context.ContextId("test"), context.PERMISSION_SCOPE_SERVICE,
 		ArgsToArgumentArray(SDK_OBJECT_STATE, SDK_METHOD_READ_BYTES, []byte("album")))
+	require.NoError(t, err)
 	album := packedStateValue.ArgumentsIterator().NextArguments().BytesValue()
 	require.EqualValues(t, []byte("Diamond Dogs"), album)
 }

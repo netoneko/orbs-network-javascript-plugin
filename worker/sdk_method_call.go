@@ -83,7 +83,17 @@ func proxyReadMethodCall(sdkObject uint32, sdkMethod uint32, jsParams string, js
 	tmpl, err := template.New(`sdkProxyMethodCall`).Parse(`
 ({{.jsParams}}) => {
 	const response = V8Worker2.send(packedArgumentsEncode([argUint32({{.sdkObject}}), argUint32({{.sdkMethod}}), {{.jsWrappedParams}}]).buffer);
-	return packedArgumentsDecode(new Uint8Array(response)).map(a => a.value)[0] || {{.defaultEmptyValue}};
+	const [ returnType, returnValue ] = packedArgumentsDecode(new Uint8Array(response)).map(a => a.value);
+
+	switch (returnType) {
+		case 0: // value
+			return packedArgumentsDecode(new Uint8Array(returnValue)).map(a => a.value)[0] || {{.defaultEmptyValue}};
+		case 1: // error
+			const errValue = packedArgumentsDecode(new Uint8Array(returnValue)).map(a => a.value)[0];
+			throw new Error(errValue);
+	}
+
+	throw new Error("unsupported return type: " + returnValue);
 }`)
 
 	if err != nil {

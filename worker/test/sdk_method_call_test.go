@@ -51,6 +51,24 @@ export function hello() {
 	sdkHandler.VerifyMocks()
 }
 
+func TestNewV8Worker_CallServiceMethodWithError(t *testing.T) {
+	sdkHandler := test.AFakeSdk()
+	contract := `
+import { Service, Uint64 } from "orbs-contract-sdk/v1"
+
+export function hello() {
+	return Service.callMethod("NicolasCage", "reciteAlphabet", Uint64(1), "a")
+}
+`
+	worker := newTestWorker(t, sdkHandler, contract)
+
+	stringValue, err := worker.callMethodWithErrors("hello", ArgsToArgumentArray())
+	require.EqualError(t, err, "JS contract execution failed")
+	require.EqualValues(t, "No service call stubbed for service NicolasCage, method name reciteAlphabet, args [1 a]", stringValue.StringValue())
+
+	sdkHandler.VerifyMocks()
+}
+
 func BenchmarkMethodCall(b *testing.B) {
 	owner := []byte("owner")
 	sdkHandler := test.AFakeSdkFor(owner, owner)

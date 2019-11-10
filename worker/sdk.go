@@ -83,7 +83,7 @@ export const Address = {
 	},
 	validateAddress: () => {
     	// FIXME address validation is not part of the SDK handler
-		throw new Error("not implemented");
+		// throw new Error("not implemented");
 	}
 }
 
@@ -116,11 +116,22 @@ export const Service = {
 		const response = V8Worker2.send(packedArgumentsEncode([
 			argUint32(500), argUint32(501), argString(serviceName), argString(methodName), ...serializedParams
 		]).buffer);
-		const decodedValues = packedArgumentsDecode(new Uint8Array(response)).map(a => a.value);
-		if (decodedValues.length === 1) {
-			return decodedValues[0];
+
+		const [ returnType, returnValue ] = packedArgumentsDecode(new Uint8Array(response)).map(a => a.value);
+
+		switch (returnType) {
+			case 0: // value
+				const decodedValues = packedArgumentsDecode(new Uint8Array(returnValue)).map(a => a.value);
+				if (decodedValues.length === 1) {
+					return decodedValues[0];
+				}
+				return decodedValues;
+			case 1: // error
+				const errValue = packedArgumentsDecode(new Uint8Array(returnValue)).map(a => a.value)[0];
+				throw new Error(errValue);
 		}
-		return decodedValues;
+
+		throw new Error("unsupported return type: " + returnValue);
 	}
 }
 

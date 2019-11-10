@@ -48,7 +48,7 @@ const (
 )
 
 type SDKMethodDispatcher interface {
-	Dispatch(ctx context.ContextId, permissionScope context.PermissionScope, args *protocol.ArgumentArray) *protocol.ArgumentArray
+	Dispatch(ctx context.ContextId, permissionScope context.PermissionScope, args *protocol.ArgumentArray) (value *protocol.ArgumentArray, err error)
 	GetCallback(value chan executionResult, ctx context.ContextId, scope context.PermissionScope) v8worker2.ReceiveMessageCallback
 }
 
@@ -75,19 +75,32 @@ func (dispatcher sdkMethodDispatcher) GetCallback(value chan executionResult, ct
 		} else if methodName == SDK_RETURN_FROM_METHOD && requestId == SDK_RETURN_ERROR {
 			value <- executionResult{errors.New(SDK_GENERIC_EXECUTION_ERROR), ArgsToValue(protocol.ArgumentArrayReader(msg)).Raw()}
 		} else {
-			return dispatcher.Dispatch(ctx, scope, argArray).Raw()
+			result, err := dispatcher.Dispatch(ctx, scope, argArray)
+			returnType := uint32(SDK_RETURN_VALUE)
+			if err != nil {
+				returnType = uint32(SDK_RETURN_ERROR)
+			}
+
+			return ArgsToArgumentArray(returnType, result.Raw()).Raw()
 		}
 
 		return nil
 	}
 }
 
-func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissionScope context.PermissionScope, args *protocol.ArgumentArray) *protocol.ArgumentArray {
+func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissionScope context.PermissionScope, args *protocol.ArgumentArray) (value *protocol.ArgumentArray, err error) {
 	iterator := args.ArgumentsIterator()
 	object := iterator.NextArguments().Uint32Value()
 	method := iterator.NextArguments().Uint32Value()
 
 	var results []interface{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+			value = ArgsToArgumentArray(err.Error())
+		}
+	}()
 
 	switch object {
 	case SDK_OBJECT_ADDRESS:
@@ -171,5 +184,5 @@ func (dispatcher *sdkMethodDispatcher) Dispatch(ctx context.ContextId, permissio
 		}
 	}
 
-	return ArgsToArgumentArray(results...)
+	return ArgsToArgumentArray(results...), nil
 }
