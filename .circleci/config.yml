@@ -17,3 +17,4 @@ jobs:
             BUILD_FLAG: javascript
       - run: ./docker-build.sh
       - run: ./release/build.sh
+      - run: ./release/release.sh
