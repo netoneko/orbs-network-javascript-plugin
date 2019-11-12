@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/orbs-network/orbs-contract-sdk/go/context"
 	"github.com/orbs-network/orbs-network-go/services/processor"
-	"github.com/orbs-network/orbs-network-javascript-plugin/pack"
 	"github.com/orbs-network/orbs-network-javascript-plugin/worker"
 	"github.com/orbs-network/orbs-spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
@@ -12,11 +11,6 @@ import (
 	"plugin"
 	"testing"
 )
-
-func TestPackArguments(t *testing.T) {
-	err := pack.Pack("../js/arguments.js", "../packed/arguments_packed.go", "packed", "ArgumentsJS")
-	require.NoError(t, err)
-}
 
 func Test_V8Worker(t *testing.T) {
 	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", "./main.bin", "..")
