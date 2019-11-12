@@ -3,3 +3,4 @@ node_modules
 .idea
 *_packed.go
 _bin
+orbs-test-keys.json

@@ -101,3 +101,22 @@ In orbs-network-go project:
 ```bash
 API_ENDPOINT=http://localhost:8080 go test ./test/e2e/... -run TestDeploymentOfJavascriptContract -v -count 1
 ```
+
+## Release process
+
+```bash
+# in orbs-network-go
+
+export BUILD_FLAG=javascript
+./docker/build/build.sh
+
+# in orbs-network-javascript-plugin
+
+./docker-build.sh
+
+./release/build.sh
+
+# start gamma
+
+gamma-cli start-local -env experimental -override-config '{"experimental-external-processor-plugin-path": "/opt/orbs/plugins/orbs-javascript-plugin"}'
+```
