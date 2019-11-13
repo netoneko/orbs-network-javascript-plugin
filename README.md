@@ -51,6 +51,14 @@ export function balanceOf(targetAddress) {
 }
 ```
 
+## Running locally
+
+```bash
+docker pull orbsnetwork/gamma:experimental-js && docker tag orbsnetwork/gamma:experimental-js orbsnetwork/experimental
+
+gamma-cli start-local -env experimental -override-config '{"experimental-external-processor-plugin-path": "/opt/orbs/plugins/orbs-javascript-plugin"}'
+```
+
 ## Building
 
 The layout of the projects:
@@ -86,8 +94,15 @@ To enable the plugin in the node/gamma, update the configuration file:
 }
 ```
 
-## E2E testing
+## Testing
 
+### Local
+
+```bash
+./build-binaries.sh
+```
+
+### Local E2E
 **Make sure** that the image `orbs-network/gamma:experimental` contains `/opt/orbs/plugins/orbs-javascript-plugin`.
 
 Start gamma:
@@ -99,7 +114,15 @@ gamma-cli start-local -env experimental -override-config '{"processor-plugin-pat
 In orbs-network-go project:
 
 ```bash
-API_ENDPOINT=http://localhost:8080 go test ./test/e2e/... -run TestDeploymentOfJavascriptContract -v -count 1
+JS_ENABLED=true API_ENDPOINT=http://localhost:8080 go test ./test/e2e/... -run TestDeploymentOfJavascriptContract -v -count 1
+```
+
+### Remote E2E
+
+```bash
+# in orbs-network-go
+
+JS_ENABLED=true API_ENDPOINT=http://35.156.69.19/vchains/1003 VCHAIN=1003 go test ./services/processor/javascript/test/e2e/... -run TestDeploymentOfJavascriptContractInteroperableWithGo -tags javascript -v
 ```
 
 ## Release process
@@ -120,3 +143,4 @@ export BUILD_FLAG=javascript
 
 gamma-cli start-local -env experimental -override-config '{"experimental-external-processor-plugin-path": "/opt/orbs/plugins/orbs-javascript-plugin"}'
 ```
+
