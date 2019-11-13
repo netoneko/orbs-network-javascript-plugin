@@ -11,8 +11,8 @@ VERSION="${VERSION}-js"
 
 docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD
 
-docker tag orbs:export orbsnetwork/node:$VERSION
+docker tag orbs:export-js orbsnetwork/node:$VERSION
 docker push orbsnetwork/node:$VERSION
 
-docker tag orbs:gamma-server orbsnetwork/gamma:$VERSION
+docker tag orbs:gamma-js orbsnetwork/gamma:$VERSION
 docker push orbsnetwork/gamma:$VERSION
