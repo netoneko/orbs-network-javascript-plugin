@@ -8,5 +8,4 @@ WORKDIR /src-plugin
 
 RUN cp go.mod.v8worker2 /go/src/github.com/ry/v8worker2/go.mod && \
     cp go.mod.docker go.mod && \
-    go get && \
     ./build-binaries.sh

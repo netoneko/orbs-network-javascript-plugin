@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/bin/bash -e
 
 export PLUGIN_PATH=_bin/orbs-javascript-plugin
 
