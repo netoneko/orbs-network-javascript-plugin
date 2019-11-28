@@ -3,8 +3,12 @@
 if [[ $CIRCLE_TAG == v* ]] ;
 then
   VERSION=$CIRCLE_TAG
-else
+elif [[ $CIRCLE_BRANCH == "master" ]] ;
+then
   VERSION=experimental
+else
+  echo "Skipping release"
+  exit 0
 fi
 
 VERSION="${VERSION}-js"
