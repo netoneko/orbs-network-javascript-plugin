@@ -54,7 +54,7 @@ export function balanceOf(targetAddress) {
 ## Running locally
 
 ```bash
-docker pull orbsnetwork/gamma:experimental-js && docker tag orbsnetwork/gamma:experimental-js orbsnetwork/experimental
+docker pull orbsnetwork/gamma:experimental-js && docker tag orbsnetwork/gamma:experimental-js orbsnetwork/gamma:experimental
 
 gamma-cli start-local -env experimental -override-config '{"experimental-external-processor-plugin-path": "/opt/orbs/plugins/orbs-javascript-plugin"}'
 ```
@@ -96,13 +96,25 @@ To enable the plugin in the node/gamma, update the configuration file:
 
 ## Testing
 
-### Local
+```
+./build-binaries.sh
+```
+
+
+### E2E
+
+```
+./docker-build.sh
+./e2e.sh
+```
+
+### orbs-network-go
 
 ```bash
 ./build-binaries.sh
 ```
 
-### Local E2E
+#### Local E2E
 **Make sure** that the image `orbs-network/gamma:experimental` contains `/opt/orbs/plugins/orbs-javascript-plugin`.
 
 Start gamma:
@@ -117,7 +129,7 @@ In orbs-network-go project:
 JS_ENABLED=true API_ENDPOINT=http://localhost:8080 go test ./test/e2e/... -run TestDeploymentOfJavascriptContract -v -count 1
 ```
 
-### Remote E2E
+#### Remote E2E
 
 ```bash
 # in orbs-network-go
