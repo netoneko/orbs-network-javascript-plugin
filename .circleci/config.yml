@@ -11,7 +11,12 @@ jobs:
           command: git clone git@github.com:orbs-network/orbs-network-go.git --branch master --single-branch .
           working_directory: /home/circleci/.go_workspace/src/github.com/orbs-network/orbs-network-go
       - run:
-          command: ./docker/build/build.sh
+          command: ./docker/build/build-docker-node.sh
+          working_directory: /home/circleci/.go_workspace/src/github.com/orbs-network/orbs-network-go
+          environment:
+            BUILD_FLAG: javascript
+      - run:
+          command: ./docker/build/build-docker-gamma.sh
           working_directory: /home/circleci/.go_workspace/src/github.com/orbs-network/orbs-network-go
           environment:
             BUILD_FLAG: javascript
